@@ -1,4 +1,5 @@
-// SERVER COMPONENT – no hooks. Calls CustomGPT on the server.
+// SERVER COMPONENT – queries CustomGPT from the server and renders JSON.
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
@@ -46,7 +47,7 @@ async function askCustomGPT(prompt: string) {
 
 export default async function Page({
   searchParams,
-}: { searchParams: { q?: string | string[] } }) {
+}: { searchParams?: { q?: string | string[] } }) {
   const rawQ = searchParams?.q;
   const q = Array.isArray(rawQ) ? rawQ[0] : rawQ || "";
   const result = q ? await askCustomGPT(q) : null;
@@ -58,7 +59,9 @@ export default async function Page({
       {!q && <div className="text-neutral-500">Enter a query to begin.</div>}
       {q && result?.error && <div className="text-red-400">Error: {result.error}</div>}
       {q && result?.data && (
-        <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(result.data, null, 2)}</pre>
+        <pre className="text-xs whitespace-pre-wrap">
+          {JSON.stringify(result.data, null, 2)}
+        </pre>
       )}
     </main>
   );
