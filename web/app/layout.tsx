@@ -2,12 +2,10 @@ import "./globals.css";
 
 export const metadata = {
   title: "APC",
-  description: "APC Site",
+  description: "A-Players Club",
 };
 
-export default function RootLayout({
-  children,
-}: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>{children}</body>
