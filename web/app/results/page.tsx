@@ -1,12 +1,14 @@
 "use client";
-import { useEffect, useState } from "react";
+
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-type Payload = unknown; // we’ll tighten later
+// Tell Next this page is dynamic (prevents prerender error)
+export const dynamic = "force-dynamic";
 
-export default function Results() {
+function ResultsInner() {
   const q = useSearchParams().get("q") || "";
-  const [data, setData] = useState<Payload | null>(null);
+  const [data, setData] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -19,7 +21,7 @@ export default function Results() {
         const r = await fetch("/api/ask", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ prompt: q })
+          body: JSON.stringify({ prompt: q }),
         });
         const j = await r.json();
         if (!r.ok) throw new Error(j?.error || "Failed");
@@ -42,5 +44,13 @@ export default function Results() {
         {data ? JSON.stringify(data, null, 2) : "No data yet."}
       </pre>
     </main>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-black text-white p-8">Loading…</main>}>
+      <ResultsInner />
+    </Suspense>
   );
 }
