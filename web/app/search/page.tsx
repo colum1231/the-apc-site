@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
-import { Section, Card } from "../components/Section";
+import { Section, Card } from "@/app/components/Section";
 
 const API_BASE = "https://app.customgpt.ai/api/v1";
 
