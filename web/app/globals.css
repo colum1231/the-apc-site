@@ -24,3 +24,65 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* === 1080-based scaling === */
+:root { --scale: calc(100vh / 1080); }
+
+.landing {
+  position: relative;
+  min-height: 100vh;
+  background:
+    radial-gradient(150% 100% at 50% 50%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0.92) 100%),
+    url("/landing-bg.jpg") center / cover no-repeat;
+  background-color: #000; /* fallback */
+}
+
+/* Logo center 274px from top (scaled) */
+.landing__logo {
+  position: absolute;
+  top: calc(274px * var(--scale));
+  left: 50%;
+  transform: translateX(-50%);
+  height: calc(90px * var(--scale)); /* tweakable; keeps aspect */
+  width: auto;
+  filter: drop-shadow(0 0 2px rgba(0,0,0,0.3));
+}
+
+/* Search box: 800w x 80h, top at 585px (all scaled) */
+.landing__form {
+  position: absolute;
+  top: calc(585px * var(--scale));
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(800px * var(--scale));
+}
+
+.landing__form input {
+  width: 100%;
+  height: calc(80px * var(--scale));
+  border: 2px solid #545454;
+  border-radius: 9999px;
+  background: transparent;
+  color: #545454;
+  text-align: center;
+  font-size: calc(18px * var(--scale));
+  outline: none;
+}
+
+.landing__form input::placeholder {
+  color: #545454;
+  opacity: 0.9;
+}
+
+/* “Go to HQ” link at bottom, 20px font, #272727 */
+.landing__hq {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(40px * var(--scale)); /* small bottom margin */
+  color: #272727;
+  font-size: calc(20px * var(--scale));
+  text-decoration: none;
+}
+
+.landing__hq:hover { text-decoration: underline; }
