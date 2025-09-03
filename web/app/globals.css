@@ -95,7 +95,7 @@ body, input, button, a {
 /* Logo placement */
 .logo {
   position: fixed;
-  top: 130px;   /* center of logo at h274 */
+  top: 120px;   /* center of logo at h274 */
   left: 50%;
   transform: translateX(-50%);
 }
@@ -103,7 +103,7 @@ body, input, button, a {
 /* Input box placement */
 .search {
   position: fixed;
-  top: 415px;   /* top of box at h495 */
+  top: 435px;   /* top of box at h495 */
   left: 50%;
   transform: translateX(-50%);
   width: 400px;       /* exact width */
