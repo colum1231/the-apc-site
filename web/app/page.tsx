@@ -1,51 +1,40 @@
+// Pixel-precise landing on a 1920×1080 stage scaled to your viewport.
+// Edit positions/sizes via CSS variables in globals.css.
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
 export default function Home() {
-  // helper to place elements by your 1080 grid
-  const h = (val: number) => `calc(100vh * ${(1080 - val) / 1080})`;
-
   return (
-    <main
-      className="landing-root"
-      style={{
-        // bind bg to the container (not body) so nothing overlays it
-        backgroundImage: "url('/landing-bg.png')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
-    >
-      {/* PNG logo */}
-      <img
-        src="/aplayers-mark.png?v=4"
-        alt="A Players Logo"
-        className="landing-logo"
-        width={120}
-        height={120}
-        style={{
-          position: "absolute",
-          left: "50%",
-          transform: "translateX(-50%)",
-          top: h(972), // h972 => 108px down on a 1080 canvas
-          zIndex: 2,
-        }}
-      />
-
-      {/* Search */}
-      <form className="landing-form" action="/search" method="get" style={{ top: h(495) }}>
-        <input
-          className="landing-input"
-          type="text"
-          name="q"
-          placeholder="What’s your next move?"
-          autoComplete="off"
+    <main className="landing-wrap">
+      <div className="stage">
+        {/* Logo (PNG) */}
+        <img
+          src="/aplayers-mark.png"
+          alt="A Players Logo"
+          className="logo"
+          width={120}
+          height={120}
         />
-      </form>
 
-      {/* HQ link */}
-      <a href="/hq" className="landing-hq">Go to HQ</a>
+        {/* Search (submit on Enter; no button) */}
+        <form action="/search" method="get" className="search">
+          <input
+            type="text"
+            name="q"
+            placeholder="What’s your next move?"
+            className="input"
+            autoComplete="off"
+          />
+        </form>
+
+        {/* Bottom link */}
+        <a href="/hq" className="hq">Go to HQ</a>
+
+        {/* Toggle this class on the container to see the grid: <div className="stage debug"> */}
+        <div className="grid-overlay" aria-hidden="true"></div>
+      </div>
     </main>
   );
 }

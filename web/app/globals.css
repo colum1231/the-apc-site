@@ -1,82 +1,115 @@
-/* ---- Landing base ---- */
-.landing-root {
+/* =========
+   LANDING — 1920×1080 stage
+   Tweak ONLY the variables below for precise placement.
+   ========= */
+:root {
+  /* Exact design numbers (in stage pixels) */
+  --stage-w: 1920;
+  --stage-h: 1080;
+
+  /* Your specs */
+  --logo-top: 108px;       /* h972  => 1080-972 = 108 */
+  --input-top: 585px;      /* h495  => 1080-495 = 585 */
+  --input-height: 80px;    /* total height of input */
+  --input-width: 800px;
+  --input-font: 18px;
+  --hq-font: 20px;
+
+  --outline: #545454;      /* input border + text color */
+  --hq-color: #272727;     /* bottom link */
+}
+
+/* Wrap fills viewport, centers the stage, applies background */
+.landing-wrap {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #000 url("/landing-bg.png") center / cover no-repeat;
+}
+
+/* 1920×1080 stage scaled to fit viewport */
+.stage {
   position: relative;
-  min-height: 100vh;
-  width: 100%;
-  background: #000;
-  color: #fff;
-  overflow: hidden;
-  /* If you later add /landing-bg.jpg, uncomment this: */
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center;
+  width: calc(var(--stage-w) * 1px);
+  height: calc(var(--stage-h) * 1px);
+  transform: scale(calc(min(100vw / var(--stage-w), 100vh / var(--stage-h))));
+  transform-origin: center center;
 }
 
-.landing-logo {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  display: block;
-  filter: drop-shadow(0 0 0 rgba(0,0,0,0)); /* crisp */
-}
-
-/* Form wrapper placed by top:h(495) from TSX */
-.landing-form {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 800px;
-  max-width: 90vw;
-  height: 80px;             /* exact height requested */
-}
-
-/* Rounded input, centered text, #545454 outline + text */
-.landing-input {
-  width: 100%;
-  height: 100%;
-  background: transparent;
-  border: 2px solid #545454;
-  border-radius: 40px;      /* pill */
-  outline: none;
-  color: #545454;
-  font-size: 18px;          /* requested */
-  text-align: center;
-  padding: 0 24px;
-}
-
-/* HQ link at bottom center, 20px, #272727 */
-.landing-hq {
-  position: absolute;
-  left: 50%;
-  bottom: 24px;
-  transform: translateX(-50%);
-  color: #272727;
-  font-size: 20px;
-  text-decoration: none;
-}
-
-/* Optional: subtle vertical vignette like your mock */
-.landing-root::before {
+/* Optional vignette over the image, behind content */
+.stage::before {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 0;
   pointer-events: none;
-  /* faint edges, invisible center */
-  background: radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.45) 100%);
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0) 40%, rgba(0,0,0,0.45) 100%);
 }
 
-body {
-  background: url("/landing-bg.png") no-repeat center center fixed;
-  background-size: cover;
+/* Everything sits above the vignette */
+.stage > * { position: relative; z-index: 1; }
+
+/* LOGO — centered horizontally, top at var(--logo-top) */
+.logo {
+  position: absolute;
+  top: var(--logo-top);
+  left: 50%;
+  transform: translateX(-50%);
+  display: block;
 }
 
-input[type="text"] {
-  outline: 1px solid #545454;
-  color: #545454;
-  font-size: 18px;
+/* SEARCH — centered; top at var(--input-top); exact size via vars */
+.search {
+  position: absolute;
+  top: var(--input-top);
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--input-width);
+  height: var(--input-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.hq-link {
-  color: #272727;
-  font-size: 20px;
+.input {
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--outline);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--outline);
+  text-align: center;
+  font-size: var(--input-font);
+  outline: none;
+  padding: 0 28px;
+}
+.input::placeholder { color: var(--outline); opacity: 0.9; }
+
+/* HQ link — bottom centered; font 20px; darker grey */
+.hq {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 28px;
+  font-size: var(--hq-font);
+  color: var(--hq-color);
+  text-decoration: none;
+}
+.hq:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ====== DEBUG GRID (optional) ====== */
+.grid-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  display: none; /* enable by adding .debug to .stage */
+}
+.stage.debug .grid-overlay {
+  display: block;
+  background:
+    linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 100px 100px; /* grid every 100px */
 }
