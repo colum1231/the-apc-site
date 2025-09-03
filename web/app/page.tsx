@@ -1,32 +1,34 @@
-// SERVER COMPONENT — no "use client" needed.
-// Landing page with pixel-precise layout mapped from a 1080px design.
+// Pixel-precise landing mapped to a 1920×1080 design.
+// We place elements inside a 1920×1080 "stage" and scale it to the viewport.
 
 export default function Home() {
   return (
     <main className="landing">
-      {/* Logo — centered horizontally; center sits 274px (≈25.37vh) from top */}
-      <img
-        src="/aplayers-mark.svg"
-        alt="A Players Logo"
-        className="logo"
-        width={92}
-        height={92}
-      />
-
-      {/* Search — top edge 585px (≈54.17vh); height 80px (≈7.41vh) */}
-      <form action="/search" method="get" className="search-wrap">
-        <input
-          type="text"
-          name="q"
-          placeholder="What’s your next move?"
-          className="search-input"
-          aria-label="Search"
+      <div className="stage">
+        {/* A Players logo — top at h972 => top: 108px */}
+        <img
+          src="/aplayers-mark.svg"
+          alt=""
+          className="logo-abs"
+          width={100}
+          height={100}
+          aria-hidden="true"
         />
-        {/* No button; Enter submits */}
-      </form>
 
-      {/* Bottom link */}
-      <a href="/hq" className="to-hq">Go to HQ</a>
+        {/* Search box — top at h495 => top: 585px; height 80px; width 800px; centered text; submit on Enter */}
+        <form action="/search" method="get" className="search-abs">
+          <input
+            type="text"
+            name="q"
+            placeholder="What’s your next move?"
+            className="search-input"
+            aria-label="Search"
+          />
+        </form>
+
+        {/* Bottom link (centered, stays near bottom of canvas) */}
+        <a href="/hq" className="hq-link">Go to HQ</a>
+      </div>
     </main>
   );
 }
