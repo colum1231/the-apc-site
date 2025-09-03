@@ -103,7 +103,7 @@ body, input, button, a {
 /* Input box placement */
 .search {
   position: fixed;
-  top: 400px;   /* top of box at h495 */
+  top: 350px;   /* top of box at h495 */
   left: 50%;
   transform: translateX(-50%);
   width: 400px;       /* exact width */
