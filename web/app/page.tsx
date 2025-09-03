@@ -14,8 +14,8 @@ export default function Home() {
     >
       {/* A-Players logo — top at h972 -> 10vh from the top */}
       <img
-        src="/aplayers-mark.png"
-        alt="A Players Logo"
+        src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIwAAACMCAYAAABT6bXOAAAACXBIWXMAAAsSAAALEgHS3X78AAAAB3RJTUUH5AQaCQs1wE9TrgAAAB1pVFh0Q29tbWVudAAAAAAAQmxhbmsgMSx4MSBwbGFjZWhvbGRlcgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAENJREFUeNrtwTEBAAAAwqD1T20MH6AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP4F3QABYtV4SgAAAABJRU5ErkJggg=="
+        alt="Test Inline Logo"
         className="landing-logo"
         width={120}
         height={120}
