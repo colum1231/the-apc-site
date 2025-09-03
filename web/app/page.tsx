@@ -3,18 +3,21 @@ export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
 export default function Home() {
-  // Helper: convert your h-coordinate to CSS top using 1080 reference.
+  // helper to place elements by your 1080 grid
   const h = (val: number) => `calc(100vh * ${(1080 - val) / 1080})`;
 
   return (
     <main
       className="landing-root"
-      // optional subtle bg if you add /landing-bg.jpg later:
-      // style={{ backgroundImage: 'url("/landing-bg.jpg")' }}
+      style={{
+        // bind bg to the container (not body) so nothing overlays it
+        backgroundImage: "url('/landing-bg.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
     >
-      {/* A-Players logo — top at h972 -> 10vh from the top */}
-
-      {/* PNG logo (file in /public) */}
+      {/* PNG logo */}
       <img
         src="/aplayers-mark.png?v=4"
         alt="A Players Logo"
@@ -25,24 +28,23 @@ export default function Home() {
           position: "absolute",
           left: "50%",
           transform: "translateX(-50%)",
-          top: "calc(100vh * ((1080 - 972) / 1080))", // h972 => top:108px at 1080p
+          top: h(972), // h972 => 108px down on a 1080 canvas
           zIndex: 2,
         }}
       />
 
-      {/* Search box — top at h495 (=> 585px from top), height 80px */}
-      <form action="/search" method="get" className="landing-form" style={{ top: h(495) }}>
+      {/* Search */}
+      <form className="landing-form" action="/search" method="get" style={{ top: h(495) }}>
         <input
+          className="landing-input"
           type="text"
           name="q"
           placeholder="What’s your next move?"
-          className="landing-input"
           autoComplete="off"
         />
-        {/* submit on Enter only (no button) */}
       </form>
 
-      {/* Go to HQ — fixed near bottom, 20px font, #272727 */}
+      {/* HQ link */}
       <a href="/hq" className="landing-hq">Go to HQ</a>
     </main>
   );
