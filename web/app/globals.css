@@ -1,100 +1,92 @@
-/* Reset-ish */
+/* Base */
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body {
   margin: 0;
   color: #fff;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
-  background-color: #000;
+  background: #000;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial;
 }
 
-/* Landing background:
-   - Subtle image
-   - Dark vignette (invisible center → darker edges)
-*/
+/* Full-viewport host with subtle background */
 .landing {
-  position: relative;
-  min-height: 100vh;
-
-  /* Background image + vignette in one stack */
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
   background:
     radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, rgba(0,0,0,0.75) 100%),
     url("/landing-bg.jpg") center / cover no-repeat;
 }
 
-/* LOGO
-   Center horizontally; center is 274px from top of a 1080px canvas → 25.37vh */
-.logo {
+/* 1920×1080 stage, perfectly centered & scaled to fit */
+.stage {
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  transform: scale(calc(min(100vw / 1920, 100vh / 1080)));
+  transform-origin: center center;
+}
+
+/* --- Absolute placements (pixel coordinates) --- */
+
+/* Logo: top at h972 ⇒ top: 108px; centered horizontally */
+.logo-abs {
   position: absolute;
+  top: 108px;              /* 1080 - 972 */
   left: 50%;
   transform: translateX(-50%);
-  top: 25.37037vh; /* 274 / 1080 * 100 */
-  display: block;
   pointer-events: none;
   user-select: none;
 }
 
-/* SEARCH WRAPPER
-   Top edge at 585px on a 1080px canvas → 54.17vh */
-.search-wrap {
+/* Search wrap: top at h495 ⇒ top: 585px; width 800; height 80 */
+.search-abs {
   position: absolute;
+  top: 585px;              /* 1080 - 495 */
   left: 50%;
   transform: translateX(-50%);
-  top: 54.16667vh; /* 585 / 1080 * 100 */
-  width: 100%;
+  width: 800px;
+  height: 80px;            /* bottom will be 665px, matching h415 */
   display: flex;
+  align-items: center;
   justify-content: center;
 }
 
-/* SEARCH INPUT
-   - Width 800px (but responsive)
-   - Height 80px → 7.41vh
-   - Rounded pill
-   - Outline + text #545454
-   - Centered placeholder/text @ 18px
+/* Search input styling per spec:
+   - centered text
+   - outline & text #545454
+   - no button; submit on Enter
 */
 .search-input {
-  width: min(800px, 90vw);
-  height: 7.40741vh;            /* 80 / 1080 * 100 */
-  min-height: 56px;             /* sensible floor on small screens */
-  max-height: 92px;             /* and a soft ceiling */
-  padding: 0 28px;
-
+  width: 100%;
+  height: 100%;
   border: 2px solid #545454;
   border-radius: 999px;
   background: transparent;
-
-  font-size: 18px;
+  font-size: 18px;         /* prompt font size */
   line-height: 1;
   color: #545454;
   text-align: center;
-
   outline: none;
+  padding: 0 28px;
 }
-
 .search-input::placeholder {
   color: #545454;
   opacity: 0.9;
 }
 
-/* GO TO HQ — bottom center; font-size 20; darker grey */
-.to-hq {
+/* Go to HQ: bottom-centered on the canvas */
+.hq-link {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 28px;
-  font-size: 20px;
-  color: #272727;
+  bottom: 28px;            /* visually close to bottom of the 1080 canvas */
+  font-size: 20px;         /* per requirement */
+  color: #272727;          /* darker grey */
   text-decoration: none;
 }
-
-.to-hq:hover {
+.hq-link:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
-}
-
-/* Small screens: keep things usable */
-@media (max-height: 700px) {
-  .logo { top: 18vh; }
-  .search-wrap { top: 45vh; }
 }
