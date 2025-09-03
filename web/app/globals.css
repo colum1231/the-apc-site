@@ -4,6 +4,10 @@
   --input-width-vw: 29vw;      /* ~30% smaller than 41.667vw */
   --input-height-vh: 5.185vh;  /* ~30% smaller than 7.407vh */
 
+  /* Provide defaults so var() usages below are valid */
+  --logo-top-vh: 120px;   /* center of logo near h274, tuned in px */
+  --input-top-vh: 435px;  /* top of input near h495, tuned in px */
+
   --outline: #545454;
   --hq-color: #272727;
   --input-font: 18px;
@@ -92,7 +96,7 @@ body, input, button, a {
   background-size: 100px 100px; /* grid every 100px */
 }
 
-/* Logo placement */
+/* Logo placement (explicit px override; keeps your current layout) */
 .logo {
   position: fixed;
   top: 120px;   /* center of logo at h274 */
@@ -100,7 +104,7 @@ body, input, button, a {
   transform: translateX(-50%);
 }
 
-/* Input box placement */
+/* Input box placement (explicit px override) */
 .search {
   position: fixed;
   top: 435px;   /* top of box at h495 */
@@ -116,7 +120,7 @@ body, input, button, a {
   text-align: center;
 }
 
-/* HQ link at bottom */
+/* HQ link at bottom (explicit px override) */
 .hq {
   position: fixed;
   left: 50%;
@@ -128,7 +132,7 @@ body, input, button, a {
   text-decoration: none;
 }
 .hq:hover {
-  opacity: 0.8;s
+  opacity: 0.8;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -139,13 +143,11 @@ body, input, button, a {
   color: rgba(84, 84, 84, 0.6); /* dark grey (#545454) with ~40% more transparency */
 }
 
-
 /* Placeholder behavior */
 input::placeholder {
   opacity: 0.6; /* 40% transparent look */
   transition: opacity 0.2s ease;
 }
-
 input:focus::placeholder {
   opacity: 0; /* disappears when typing */
 }
