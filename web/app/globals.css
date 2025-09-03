@@ -1,78 +1,48 @@
-/* =========
-   LANDING — 1920×1080 stage
-   Tweak ONLY the variables below for precise placement.
-   ========= */
-:root {
-  /* Exact design numbers (in stage pixels) */
-  --stage-w: 1920;
-  --stage-h: 1080;
+/* ===== Landing (viewport-mapped) ===== */
+:root{
+  /* Your design mapped to viewport units */
+  --logo-top-vh: 10vh;         /* 108 / 1080 */
+  --input-top-vh: 54.167vh;    /* 585 / 1080 */
+  --input-height-vh: 7.407vh;  /* 80 / 1080 */
+  --input-width-vw: 41.667vw;  /* 800 / 1920 */
 
-  /* Your specs */
-  --logo-top: 108px;       /* h972  => 1080-972 = 108 */
-  --input-top: 585px;      /* h495  => 1080-495 = 585 */
-  --input-height: 80px;    /* total height of input */
-  --input-width: 800px;
+  --outline: #545454;
+  --hq-color: #272727;
   --input-font: 18px;
   --hq-font: 20px;
-
-  --outline: #545454;      /* input border + text color */
-  --hq-color: #272727;     /* bottom link */
 }
 
-/* Wrap fills viewport, centers the stage, applies background */
-.landing-wrap {
+/* Full-bleed background */
+.landing-wrap{
   position: fixed;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: block;
   background: #000 url("/landing-bg.png") center / cover no-repeat;
 }
 
-/* 1920×1080 stage scaled to fit viewport */
-.stage {
-  position: relative;
-  width: calc(var(--stage-w) * 1px);
-  height: calc(var(--stage-h) * 1px);
-  transform: scale(calc(min(100vw / var(--stage-w), 100vh / var(--stage-h))));
-  transform-origin: center center;
-}
-
-/* Optional vignette over the image, behind content */
-.stage::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: radial-gradient(ellipse at center, rgba(0,0,0,0) 40%, rgba(0,0,0,0.45) 100%);
-}
-
-/* Everything sits above the vignette */
-.stage > * { position: relative; z-index: 1; }
-
-/* LOGO — centered horizontally, top at var(--logo-top) */
-.logo {
-  position: absolute;
-  top: var(--logo-top);
+/* We position elements directly in the viewport (no scaling). */
+.logo{
+  position: fixed;
+  top: var(--logo-top-vh);
   left: 50%;
   transform: translateX(-50%);
   display: block;
 }
 
-/* SEARCH — centered; top at var(--input-top); exact size via vars */
-.search {
-  position: absolute;
-  top: var(--input-top);
+/* Search */
+.search{
+  position: fixed;
+  top: var(--input-top-vh);
   left: 50%;
   transform: translateX(-50%);
-  width: var(--input-width);
-  height: var(--input-height);
+  width: var(--input-width-vw);
+  height: var(--input-height-vh);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.input {
+.input{
   width: 100%;
   height: 100%;
   border: 2px solid var(--outline);
@@ -84,11 +54,11 @@
   outline: none;
   padding: 0 28px;
 }
-.input::placeholder { color: var(--outline); opacity: 0.9; }
+.input::placeholder{ color: var(--outline); opacity: .9; }
 
-/* HQ link — bottom centered; font 20px; darker grey */
-.hq {
-  position: absolute;
+/* Bottom link (fixed to bottom center) */
+.hq{
+  position: fixed;
   left: 50%;
   transform: translateX(-50%);
   bottom: 28px;
@@ -96,7 +66,7 @@
   color: var(--hq-color);
   text-decoration: none;
 }
-.hq:hover { text-decoration: underline; text-underline-offset: 3px; }
+.hq:hover{ text-decoration: underline; text-underline-offset: 3px; }
 
 /* ====== DEBUG GRID (optional) ====== */
 .grid-overlay {
