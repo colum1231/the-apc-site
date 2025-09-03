@@ -1,92 +1,66 @@
-/* Base */
-* { box-sizing: border-box; }
-html, body { height: 100%; }
-body {
-  margin: 0;
-  color: #fff;
-  background: #000;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial;
-}
-
-/* Full-viewport host with subtle background */
-.landing {
-  position: fixed;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  background:
-    radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, rgba(0,0,0,0.75) 100%),
-    url("/landing-bg.jpg") center / cover no-repeat;
-}
-
-/* 1920×1080 stage, perfectly centered & scaled to fit */
-.stage {
+/* ---- Landing base ---- */
+.landing-root {
   position: relative;
-  width: 1920px;
-  height: 1080px;
-  transform: scale(calc(min(100vw / 1920, 100vh / 1080)));
-  transform-origin: center center;
+  min-height: 100vh;
+  width: 100%;
+  background: #000;
+  color: #fff;
+  overflow: hidden;
+  /* If you later add /landing-bg.jpg, uncomment this: */
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
 }
 
-/* --- Absolute placements (pixel coordinates) --- */
-
-/* Logo: top at h972 ⇒ top: 108px; centered horizontally */
-.logo-abs {
+.landing-logo {
   position: absolute;
-  top: 108px;              /* 1080 - 972 */
   left: 50%;
   transform: translateX(-50%);
-  pointer-events: none;
-  user-select: none;
+  display: block;
+  filter: drop-shadow(0 0 0 rgba(0,0,0,0)); /* crisp */
 }
 
-/* Search wrap: top at h495 ⇒ top: 585px; width 800; height 80 */
-.search-abs {
+/* Form wrapper placed by top:h(495) from TSX */
+.landing-form {
   position: absolute;
-  top: 585px;              /* 1080 - 495 */
   left: 50%;
   transform: translateX(-50%);
   width: 800px;
-  height: 80px;            /* bottom will be 665px, matching h415 */
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  max-width: 90vw;
+  height: 80px;             /* exact height requested */
 }
 
-/* Search input styling per spec:
-   - centered text
-   - outline & text #545454
-   - no button; submit on Enter
-*/
-.search-input {
+/* Rounded input, centered text, #545454 outline + text */
+.landing-input {
   width: 100%;
   height: 100%;
-  border: 2px solid #545454;
-  border-radius: 999px;
   background: transparent;
-  font-size: 18px;         /* prompt font size */
-  line-height: 1;
-  color: #545454;
-  text-align: center;
+  border: 2px solid #545454;
+  border-radius: 40px;      /* pill */
   outline: none;
-  padding: 0 28px;
-}
-.search-input::placeholder {
   color: #545454;
-  opacity: 0.9;
+  font-size: 18px;          /* requested */
+  text-align: center;
+  padding: 0 24px;
 }
 
-/* Go to HQ: bottom-centered on the canvas */
-.hq-link {
+/* HQ link at bottom center, 20px, #272727 */
+.landing-hq {
   position: absolute;
   left: 50%;
+  bottom: 24px;
   transform: translateX(-50%);
-  bottom: 28px;            /* visually close to bottom of the 1080 canvas */
-  font-size: 20px;         /* per requirement */
-  color: #272727;          /* darker grey */
+  color: #272727;
+  font-size: 20px;
   text-decoration: none;
 }
-.hq-link:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
+
+/* Optional: subtle vertical vignette like your mock */
+.landing-root::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* faint edges, invisible center */
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.45) 100%);
 }
