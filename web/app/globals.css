@@ -95,7 +95,7 @@ body, input, button, a {
 /* Logo placement */
 .logo {
   position: fixed;
-  top: 274px;   /* center of logo at h274 */
+  top: 140px;   /* center of logo at h274 */
   left: 50%;
   transform: translateX(-50%);
 }
@@ -103,13 +103,13 @@ body, input, button, a {
 /* Input box placement */
 .search {
   position: fixed;
-  top: 495px;   /* top of box at h495 */
+  top: 400px;   /* top of box at h495 */
   left: 50%;
   transform: translateX(-50%);
-  width: 800px;       /* exact width */
-  height: 80px;       /* exact height */
-  font-size: 18px;
-  color: #545454;
+  width: 400px;       /* exact width */
+  height: 45px;       /* exact height */
+  font-size: 15.5px;
+  color: #333333;
   border: 2px solid #545454;
   border-radius: 40px;
   background: transparent;
@@ -131,4 +131,10 @@ body, input, button, a {
   opacity: 0.8;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+/* Style the search box placeholder */
+.search input::placeholder {
+  font-size: 16px;
+  color: rgba(84, 84, 84, 0.6); /* dark grey (#545454) with ~40% more transparency */
 }
