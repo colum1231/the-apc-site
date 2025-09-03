@@ -1,88 +1,100 @@
-@import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Reset-ish */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  color: #fff;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  background-color: #000;
 }
 
-/* === 1080-based scaling === */
-:root { --scale: calc(100vh / 1080); }
-
+/* Landing background:
+   - Subtle image
+   - Dark vignette (invisible center → darker edges)
+*/
 .landing {
   position: relative;
   min-height: 100vh;
+
+  /* Background image + vignette in one stack */
   background:
-    radial-gradient(150% 100% at 50% 50%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0.92) 100%),
+    radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, rgba(0,0,0,0.75) 100%),
     url("/landing-bg.jpg") center / cover no-repeat;
-  background-color: #000; /* fallback */
 }
 
-/* Logo center 274px from top (scaled) */
-.landing__logo {
+/* LOGO
+   Center horizontally; center is 274px from top of a 1080px canvas → 25.37vh */
+.logo {
   position: absolute;
-  top: calc(274px * var(--scale));
   left: 50%;
   transform: translateX(-50%);
-  height: calc(90px * var(--scale)); /* tweakable; keeps aspect */
-  width: auto;
-  filter: drop-shadow(0 0 2px rgba(0,0,0,0.3));
+  top: 25.37037vh; /* 274 / 1080 * 100 */
+  display: block;
+  pointer-events: none;
+  user-select: none;
 }
 
-/* Search box: 800w x 80h, top at 585px (all scaled) */
-.landing__form {
+/* SEARCH WRAPPER
+   Top edge at 585px on a 1080px canvas → 54.17vh */
+.search-wrap {
   position: absolute;
-  top: calc(585px * var(--scale));
   left: 50%;
   transform: translateX(-50%);
-  width: calc(800px * var(--scale));
-}
-
-.landing__form input {
+  top: 54.16667vh; /* 585 / 1080 * 100 */
   width: 100%;
-  height: calc(80px * var(--scale));
+  display: flex;
+  justify-content: center;
+}
+
+/* SEARCH INPUT
+   - Width 800px (but responsive)
+   - Height 80px → 7.41vh
+   - Rounded pill
+   - Outline + text #545454
+   - Centered placeholder/text @ 18px
+*/
+.search-input {
+  width: min(800px, 90vw);
+  height: 7.40741vh;            /* 80 / 1080 * 100 */
+  min-height: 56px;             /* sensible floor on small screens */
+  max-height: 92px;             /* and a soft ceiling */
+  padding: 0 28px;
+
   border: 2px solid #545454;
-  border-radius: 9999px;
+  border-radius: 999px;
   background: transparent;
+
+  font-size: 18px;
+  line-height: 1;
   color: #545454;
   text-align: center;
-  font-size: calc(18px * var(--scale));
+
   outline: none;
 }
 
-.landing__form input::placeholder {
+.search-input::placeholder {
   color: #545454;
   opacity: 0.9;
 }
 
-/* “Go to HQ” link at bottom, 20px font, #272727 */
-.landing__hq {
+/* GO TO HQ — bottom center; font-size 20; darker grey */
+.to-hq {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: calc(40px * var(--scale)); /* small bottom margin */
+  bottom: 28px;
+  font-size: 20px;
   color: #272727;
-  font-size: calc(20px * var(--scale));
   text-decoration: none;
 }
 
-.landing__hq:hover { text-decoration: underline; }
+.to-hq:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Small screens: keep things usable */
+@media (max-height: 700px) {
+  .logo { top: 18vh; }
+  .search-wrap { top: 45vh; }
+}

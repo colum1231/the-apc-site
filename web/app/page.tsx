@@ -1,33 +1,32 @@
-// SERVER COMPONENT
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-export const fetchCache = "force-no-store";
+// SERVER COMPONENT — no "use client" needed.
+// Landing page with pixel-precise layout mapped from a 1080px design.
 
 export default function Home() {
   return (
     <main className="landing">
-      {/* Logo */}
+      {/* Logo — centered horizontally; center sits 274px (≈25.37vh) from top */}
       <img
         src="/aplayers-mark.svg"
-        alt="A Players"
-        className="landing__logo"
-        width={120}
-        height={120}
+        alt="A Players Logo"
+        className="logo"
+        width={92}
+        height={92}
       />
 
-      {/* Search (submit on Enter) */}
-      <form action="/search" method="get" className="landing__form" role="search">
+      {/* Search — top edge 585px (≈54.17vh); height 80px (≈7.41vh) */}
+      <form action="/search" method="get" className="search-wrap">
         <input
           type="text"
           name="q"
           placeholder="What’s your next move?"
+          className="search-input"
           aria-label="Search"
-          autoComplete="off"
         />
+        {/* No button; Enter submits */}
       </form>
 
-      {/* HQ link */}
-      <a href="/hq" className="landing__hq">Go to HQ</a>
+      {/* Bottom link */}
+      <a href="/hq" className="to-hq">Go to HQ</a>
     </main>
   );
 }
