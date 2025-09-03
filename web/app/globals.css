@@ -91,3 +91,44 @@ body, input, button, a {
     linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px);
   background-size: 100px 100px; /* grid every 100px */
 }
+
+/* Logo placement */
+.logo {
+  position: fixed;
+  top: 274px;   /* center of logo at h274 */
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Input box placement */
+.search {
+  position: fixed;
+  top: 495px;   /* top of box at h495 */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;       /* exact width */
+  height: 80px;       /* exact height */
+  font-size: 18px;
+  color: #545454;
+  border: 2px solid #545454;
+  border-radius: 40px;
+  background: transparent;
+  text-align: center;
+}
+
+/* HQ link at bottom */
+.hq {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 28px;
+  font-size: 20px;
+  color: #272727;
+  opacity: 0.5;   /* 50% transparency */
+  text-decoration: none;
+}
+.hq:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
