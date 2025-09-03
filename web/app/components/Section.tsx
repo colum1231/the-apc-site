@@ -1,0 +1,19 @@
+export function Section({
+  title,
+  children,
+  right,
+}: { title: string; children?: React.ReactNode; right?: boolean }) {
+  return (
+    <section className={right ? "" : "mb-6"}>
+      <div className="flex items-center justify-between border-b border-neutral-800 pb-2 mb-3">
+        <h2 className="text-sm uppercase tracking-widest text-neutral-400">{title}</h2>
+        <a href="#" className="text-xs text-neutral-500 hover:text-neutral-200">View all →</a>
+      </div>
+      <div className="space-y-3">{children}</div>
+    </section>
+  );
+}
+
+export function Card({ children }: { children: React.ReactNode }) {
+  return <div className="border border-neutral-800 rounded-md p-3">{children}</div>;
+}
