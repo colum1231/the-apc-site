@@ -1,15 +1,18 @@
 /* ===== Landing (viewport-mapped) ===== */
 :root{
-  /* Your design mapped to viewport units */
-  --logo-top-vh: 10vh;         /* 108 / 1080 */
-  --input-top-vh: 54.167vh;    /* 585 / 1080 */
-  --input-height-vh: 7.407vh;  /* 80 / 1080 */
-  --input-width-vw: 41.667vw;  /* 800 / 1920 */
+  /* Input box smaller: reduce width and height by ~30% */
+  --input-width-vw: 29vw;      /* ~30% smaller than 41.667vw */
+  --input-height-vh: 5.185vh;  /* ~30% smaller than 7.407vh */
 
   --outline: #545454;
   --hq-color: #272727;
   --input-font: 18px;
   --hq-font: 20px;
+}
+
+/* Global font */
+body, input, button, a {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 /* Full-bleed background */
@@ -64,9 +67,14 @@
   bottom: 28px;
   font-size: var(--hq-font);
   color: var(--hq-color);
+  opacity: 0.5;   /* 50% transparency */
   text-decoration: none;
 }
-.hq:hover{ text-decoration: underline; text-underline-offset: 3px; }
+.hq:hover{
+  opacity: 0.8;   /* slightly stronger on hover */
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 
 /* ====== DEBUG GRID (optional) ====== */
 .grid-overlay {
