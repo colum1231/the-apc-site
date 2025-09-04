@@ -10,7 +10,11 @@ export default function Home() {
     <main
       style={{
         minHeight: "100vh",
-        background: "#000",
+        // faint background image with dark vignette
+        backgroundImage:
+          'linear-gradient(to right, rgba(0,0,0,0.88), rgba(0,0,0,0.70), rgba(0,0,0,0.88)), url("/landing-bg.png")',
+        backgroundSize: "cover",
+        backgroundPosition: "center",
         color: "#fff",
         display: "grid",
         placeItems: "center",
@@ -18,8 +22,21 @@ export default function Home() {
       }}
     >
       <div style={{ textAlign: "center", maxWidth: 720 }}>
-        <h1 style={{ fontSize: 28, marginBottom: 12 }}>A Players</h1>
-        <form action="/search" method="get" style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+        {/* LOGO (replaces the heading text) */}
+        <img
+          src="/aplayers-mark.png"
+          alt="A Players Logo"
+          style={{
+            display: "block",
+            margin: "0 auto 24px auto",
+            width: 64,
+            height: "auto",
+            filter: "drop-shadow(0 0 0 rgba(0,0,0,0))",
+          }}
+        />
+
+        {/* Search form – submit on Enter */}
+        <form action="/search" method="get" style={{ display: "flex", justifyContent: "center" }}>
           <input
             type="text"
             name="q"
@@ -34,9 +51,12 @@ export default function Home() {
               textAlign: "center",
               outline: "none",
             }}
+            onFocus={(e) => (e.currentTarget.placeholder = "")}
+            onBlur={(e) => (e.currentTarget.placeholder = "What's your next move?")}
           />
         </form>
 
+        {/* Bottom link */}
         <div style={{ marginTop: 20 }}>
           <Link href="/hq" style={{ color: "#888", textDecoration: "none" }}>
             Go to HQ
