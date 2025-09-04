@@ -56,7 +56,7 @@ async function askCustomGPT(prompt: string) {
         "content-type": "application/json",
         authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({ response_source: "default", prompt }),
+      body: JSON.stringify({ prompt }),
       cache: "no-store",
     }
   );
