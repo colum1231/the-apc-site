@@ -151,3 +151,75 @@ input::placeholder {
 input:focus::placeholder {
   opacity: 0; /* disappears when typing */
 }
+
+/* === APC Landing (known-good) === */
+:root{
+  --outline: #545454;
+  --hq-color: #272727;
+}
+
+html, body {
+  height: 100%;
+  background: #000;
+}
+
+/* Full-bleed background image (optional) */
+.landing-wrap{
+  position: fixed;
+  inset: 0;
+  display: block;
+  background: #000 url("/landing-bg.png") center / cover no-repeat;
+}
+
+/* Logo centered horizontally, at 274px from top */
+.logo{
+  position: fixed;
+  top: 274px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Search bar: centered, 800×80, outlined */
+.search{
+  position: fixed;
+  top: 495px;             /* top of box */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.input{
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--outline);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--outline);
+  text-align: center;
+  font-size: 18px;
+  outline: none;
+  padding: 0 28px;
+}
+/* placeholder fades out on focus */
+.input::placeholder{ color: var(--outline); opacity: 0.6; transition: opacity .15s ease; }
+.input:focus::placeholder{ opacity: 0; }
+
+/* Bottom “Go to HQ” link */
+.hq{
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 28px;
+  font-size: 20px;
+  color: var(--hq-color);
+  opacity: 0.5;
+  text-decoration: none;
+}
+.hq:hover{
+  opacity: 0.8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
