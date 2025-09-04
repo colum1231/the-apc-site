@@ -174,7 +174,7 @@ html, body {
 /* Logo centered horizontally, at 274px from top */
 .logo{
   position: fixed;
-  top: 274px;
+  top: 100px;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -182,11 +182,11 @@ html, body {
 /* Search bar: centered, 800×80, outlined */
 .search{
   position: fixed;
-  top: 495px;             /* top of box */
+  top: 250px;             /* top of box */
   left: 50%;
   transform: translateX(-50%);
-  width: 800px;
-  height: 80px;
+  width: 300px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
