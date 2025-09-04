@@ -2,6 +2,9 @@
 export default function Home() {
   return (
     <main className="landing-wrap">
+      
+      <div className="landing-wrap" aria-hidden="true" />
+
       <img
         className="logo"
         src="/aplayers-mark.png"
