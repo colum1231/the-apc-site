@@ -157,13 +157,14 @@ html, body {
 }
 
 /* Logo centered horizontally, at 274px from top */
+/* globals.css */
 .logo{
   position: fixed;
-  top: 274px;
+  top: 120px;              /* target the TOP edge */
   left: 50%;
-  transform: translateX(-50%);
-  width: 200px;   /* adjust as needed */
-  height: auto;   /* keeps proportions */
+  transform: translateX(-50%); /* only horizontal centering */
+  width: 200px;            
+  height: auto;
 }
 
 /* Search bar: centered, 800×80, outlined */
@@ -172,7 +173,7 @@ html, body {
   top: 400px;             /* top of box */
   left: 50%;
   transform: translateX(-50%);
-  width: 375px;
+  width: 350px;
   height: 42.5px;
   display: flex;
   align-items: center;
@@ -184,7 +185,7 @@ html, body {
   border: 2px solid var(--outline);
   border-radius: 999px;
   background: transparent;
-  color: #545454;
+  color: #373737;
   text-align: center;
   font-size: 18px;
   outline: none;
