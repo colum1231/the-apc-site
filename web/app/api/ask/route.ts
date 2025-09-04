@@ -1,96 +1,106 @@
-// app/api/ask/route.ts
-import { NextResponse } from "next/server";
+// web/app/api/ask/route.ts
+
+export const runtime = "nodejs";           // ensure Node (not Edge)
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 const API_BASE = "https://app.customgpt.ai/api/v1";
 
-function getEnv(name: string) {
-  const v = process.env[name];
-  return (typeof v === "string" && v.trim().length > 0) ? v.trim() : null;
-}
+type AskPayload = { q?: string };
 
-async function askCustomGPT(prompt: string) {
-  const apiKey = getEnv("CUSTOMGPT_API_KEY");
-  const projectId = getEnv("CUSTOMGPT_PROJECT_ID");
-
-  if (!apiKey || !projectId) {
-    const missing = [
-      !apiKey ? "CUSTOMGPT_API_KEY" : null,
-      !projectId ? "CUSTOMGPT_PROJECT_ID" : null,
-    ].filter(Boolean);
-    return NextResponse.json(
-      { ok: false, error: `Missing env: ${missing.join(", ")}` },
-      { status: 500 }
-    );
-  }
-
-  // Create a conversation
-  const convRes = await fetch(`${API_BASE}/projects/${projectId}/conversations`, {
-    method: "POST",
-    headers: {
-      accept: "application/json",
-      "content-type": "application/json",
-      authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({ name: "APC session" }),
-    cache: "no-store",
-  });
-
-  if (!convRes.ok) {
-    const text = await convRes.text();
-    return NextResponse.json(
-      { ok: false, step: "create_conversation", status: convRes.status, body: text },
-      { status: convRes.status || 500 }
-    );
-  }
-
-  const conv = await convRes.json();
-  const sessionId = conv.session_id;
-
-  // Send message
-  const msgRes = await fetch(
-    `${API_BASE}/projects/${projectId}/conversations/${sessionId}/messages`,
-    {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        "content-type": "application/json",
-        authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({ prompt }),
-      cache: "no-store",
+async function jsonSafe(res: Response) {
+  try {
+    return await res.json();
+  } catch {
+    try {
+      return await res.text();
+    } catch {
+      return null;
     }
-  );
-
-  const bodyText = await msgRes.text();
-  let json: any = null;
-  try { json = JSON.parse(bodyText); } catch { /* leave as text */ }
-
-  if (!msgRes.ok) {
-    return NextResponse.json(
-      { ok: false, step: "send_message", status: msgRes.status, body: json ?? bodyText },
-      { status: msgRes.status || 500 }
-    );
   }
-
-  const payload = (json && (json.message ?? json)) ?? bodyText;
-  return NextResponse.json({ ok: true, data: payload });
 }
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q") || "";
-  if (!q) return NextResponse.json({ ok: false, error: "Missing q" }, { status: 400 });
-  return askCustomGPT(q);
+  // delegate to POST for single codepath
+  return POST(new Request(req.url, { method: "POST", body: JSON.stringify({ q }) }));
 }
 
 export async function POST(req: Request) {
-  let q = "";
-  try {
-    const body = await req.json();
-    q = body?.q || body?.prompt || "";
-  } catch {
-    // ignore
+  const { q = "" } = (await req.json().catch(() => ({}))) as AskPayload;
+
+  const apiKey = process.env.CUSTOMGPT_API_KEY;
+  const projectId = process.env.CUSTOMGPT_PROJECT_ID;
+
+  if (!apiKey || !projectId) {
+    return Response.json(
+      { ok: false, error: "Missing CUSTOMGPT_API_KEY or CUSTOMGPT_PROJECT_ID" },
+      { status: 500 }
+    );
   }
-  if (!q) return NextResponse.json({ ok: false, error: "Missing q" }, { status: 400 });
-  return askCustomGPT(q);
+
+  // 1) Create conversation
+  const convRes = await fetch(`${API_BASE}/projects/${projectId}/conversations`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      // NOTE: canonical-cased header
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({ name: "APC session" }),
+    cache: "no-store",
+  });
+
+  const convBody = await jsonSafe(convRes);
+  if (!convRes.ok) {
+    return Response.json(
+      { ok: false, step: "create_conversation", status: convRes.status, body: convBody },
+      { status: convRes.status }
+    );
+  }
+
+  // CustomGPT sometimes nests the payload:
+  const sessionId =
+    convBody?.data?.session_id ??
+    convBody?.session_id ??
+    convBody?.data?.id ?? // fallback, just in case
+    null;
+
+  if (!sessionId) {
+    return Response.json(
+      { ok: false, step: "create_conversation", status: 500, body: convBody, error: "No session_id returned" },
+      { status: 500 }
+    );
+  }
+
+  // 2) Send message
+  const msgRes = await fetch(
+    `${API_BASE}/projects/${projectId}/conversations/${sessionId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        prompt: q,
+        response_source: "default",
+      }),
+      cache: "no-store",
+    }
+  );
+
+  const msgBody = await jsonSafe(msgRes);
+  if (!msgRes.ok) {
+    return Response.json(
+      { ok: false, step: "send_message", status: msgRes.status, body: msgBody },
+      { status: msgRes.status }
+    );
+  }
+
+  return Response.json({ ok: true, data: msgBody?.data ?? msgBody }, { status: 200 });
 }
