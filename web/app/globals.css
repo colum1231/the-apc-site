@@ -160,7 +160,7 @@ html, body {
 /* globals.css */
 .logo{
   position: fixed;
-  top: 110px;              /* target the TOP edge */
+  top: 97.5px;              /* target the TOP edge */
   left: 50%;
   transform: translateX(-50%); /* only horizontal centering */
   width: 120px;            
