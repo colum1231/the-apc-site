@@ -223,3 +223,8 @@ html, body {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* Force the landing background to render from /public */
+html, body {
+  background: #000 url("/landing-bg.png") center / cover no-repeat fixed;
+}
