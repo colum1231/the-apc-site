@@ -5,46 +5,21 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
-type SectionKey = "members" | "transcripts" | "resources" | "partnerships" | "events";
+type RawAPI = {
+  ok?: boolean;
+  data?: any;
+  openai_response?: string;
+  [k: string]: any;
+};
 
-type StructuredResponse = {
-  transcripts?: {
-    section_title?: string;
-    section_url?: string;
-    items?: Array<{ title?: string; url?: string; quote?: string; name?: string; context?: string }>;
-    load_more_token?: string;
-  };
-  community_chats?: {
-    section_title?: string;
-    section_url?: string;
-    items?: Array<{
-      title?: string; // "Name | Industry/Title | TG: @user // +353 ..."
-      username?: string; // "@handle" or "handle"
-      username_url?: string; // https://t.me/handle
-      quote?: string;
-      context?: string;
-      source?: string;
-    }>;
-    load_more_token?: string;
-  };
-  resources?: {
-    section_title?: string;
-    section_url?: string;
-    items?: Array<{ title?: string; summary?: string; url?: string }>;
-    load_more_token?: string;
-  };
-  partnerships?: {
-    section_title?: string;
-    section_url?: string;
-    items?: Array<{ title?: string; description?: string; contact_line?: string; url?: string }>;
-    load_more_token?: string;
-  };
-  events?: {
-    section_title?: string;
-    section_url?: string;
-    items?: Array<{ title?: string; url?: string }>;
-    load_more_token?: string;
-  };
+type Sections = {
+  members: any[];
+  transcripts: any[];
+  resources: any[];
+  partnerships: any[];
+  events: any[];
+  // optional “load more” tokens if your prompt returns them
+  tokens?: Partial<Record<keyof Omit<Sections, "tokens">, string>>;
 };
 
 function getBaseUrl() {
@@ -53,143 +28,62 @@ function getBaseUrl() {
   return "http://localhost:3000";
 }
 
-/** Pulls JSON from /api/ask and returns either structured data or a raw object. */
-async function ask(q: string): Promise<{ data: any; structured: StructuredResponse | null }> {
-  const url = `${getBaseUrl()}/api/ask?q=${encodeURIComponent(q)}`;
-  const res = await fetch(url, { cache: "no-store" });
+/** Extracts the ```json … ``` block from openai_response and parses it. */
+function parseStructured(data: any): Sections | null {
+  const body = data?.data ?? data;
+  const text: string | undefined =
+    body?.openai_response ?? body?.message ?? data?.openai_response;
 
-  let payload: any;
+  // If the API already returned object fields, map them directly
+  const looksStructured =
+    body?.transcripts ||
+    body?.community_chats ||
+    body?.resources ||
+    body?.partnerships ||
+    body?.events;
+
+  if (looksStructured) {
+    return {
+      members: body?.community_chats ?? [],
+      transcripts: body?.transcripts ?? [],
+      resources: body?.resources ?? [],
+      partnerships: body?.partnerships ?? [],
+      events: body?.events ?? [],
+      tokens: {
+        members: body?.community_chats?.load_more_token,
+        transcripts: body?.transcripts?.load_more_token,
+        resources: body?.resources?.load_more_token,
+        partnerships: body?.partnerships?.load_more_token,
+        events: body?.events?.load_more_token,
+      },
+    };
+  }
+
+  if (!text) return null;
+
+  // pull out a ```json … ``` fenced block (or fallback to first ``` … ```)
+  const fence = text.match(/```json\s*([\s\S]*?)```/) ?? text.match(/```\s*([\s\S]*?)```/);
+  if (!fence) return null;
+
   try {
-    payload = await res.json();
+    const obj = JSON.parse(fence[1].trim());
+    return {
+      members: obj.community_chats?.items ?? obj.community_chats ?? [],
+      transcripts: obj.transcripts?.items ?? obj.transcripts ?? [],
+      resources: obj.resources?.items ?? obj.resources ?? [],
+      partnerships: obj.partnerships?.items ?? obj.partnerships ?? [],
+      events: obj.events?.items ?? obj.events ?? [],
+      tokens: {
+        members: obj.community_chats?.load_more_token,
+        transcripts: obj.transcripts?.load_more_token,
+        resources: obj.resources?.load_more_token,
+        partnerships: obj.partnerships?.load_more_token,
+        events: obj.events?.load_more_token,
+      },
+    };
   } catch {
-    payload = { ok: false, status: res.status, body: await res.text() };
+    return null;
   }
-
-  // Try to extract structured sections if the bot returned a ```json code block
-  let structured: StructuredResponse | null = null;
-  const openai = payload?.data?.openai_response ?? payload?.openai_response ?? payload;
-
-  if (typeof openai === "string") {
-    const m = openai.match(/```json\s*([\s\S]*?)```/i);
-    if (m) {
-      try {
-        structured = JSON.parse(m[1]);
-      } catch {
-        structured = null;
-      }
-    }
-  } else if (
-    openai &&
-    (openai.transcripts || openai.community_chats || openai.resources || openai.partnerships || openai.events)
-  ) {
-    structured = openai as StructuredResponse;
-  }
-
-  return { data: payload, structured };
-}
-
-/** Clean handle like "@name" -> "name" */
-function normalizeHandle(u?: string) {
-  if (!u) return "";
-  return u.replace(/^@/, "");
-}
-
-/** Render a single member card (left column). */
-function MemberCard(item: any, idx: number) {
-  const title = item?.title || item?.name || "Member";
-  const quote = item?.quote;
-  const handle = normalizeHandle(item?.username);
-  const tgUrl = item?.username_url || (handle ? `https://t.me/${handle}` : "");
-
-  // Build “Name | Industry/Title | TG: @user // phone” display, but respect your rules:
-  // - If no username, omit TG.
-  // - We only render what's present; no fabrication.
-  const header = title;
-
-  return (
-    <div
-      key={`member-${idx}`}
-      className="rounded-xl border border-neutral-800 p-4 hover:border-neutral-600 transition"
-      style={{ color: "#8b8989" }}
-    >
-      <div className="text-[15px] font-medium">{header}</div>
-      {quote && (
-        <div className="mt-2 text-[13px] italic">
-          “{quote}”
-        </div>
-      )}
-      {handle && (
-        <div className="mt-1 text-[12px]">
-          TG:{" "}
-          <a href={tgUrl} target="_blank" rel="noopener noreferrer" className="underline">
-            @{handle}
-          </a>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** Render a generic item card (right column), link only the title. */
-function RightCard(
-  kind: Exclude<SectionKey, "members">,
-  item: any,
-  idx: number
-) {
-  if (kind === "transcripts") {
-    const title = item?.title || item?.name || "Call Recording";
-    const url = item?.url || "#";
-    const quote = item?.quote;
-    return (
-      <div key={`${kind}-${idx}`} className="rounded-xl border border-neutral-800 p-4 hover:border-neutral-600 transition">
-        <a href={url} target="_blank" rel="noopener noreferrer" className="text-[15px] underline" style={{ color: "#8b8989" }}>
-          {title}
-        </a>
-        {quote && <div className="mt-2 text-[13px] italic" style={{ color: "#8b8989" }}>“{quote}”</div>}
-      </div>
-    );
-  }
-
-  if (kind === "resources") {
-    const title = item?.title || "Resource";
-    const url = item?.url || "#";
-    const summary = item?.summary;
-    return (
-      <div key={`${kind}-${idx}`} className="rounded-xl border border-neutral-800 p-4 hover:border-neutral-600 transition">
-        <a href={url} target="_blank" rel="noopener noreferrer" className="text-[15px] underline" style={{ color: "#8b8989" }}>
-          {title}
-        </a>
-        {summary && <div className="mt-2 text-[13px]" style={{ color: "#8b8989" }}>{summary}</div>}
-      </div>
-    );
-  }
-
-  if (kind === "partnerships") {
-    const title = item?.title || "Partner";
-    const url = item?.url || "#";
-    const desc = item?.description;
-    const contact = item?.contact_line; // We’ll display as-is (your prompt logic already formats it)
-    return (
-      <div key={`${kind}-${idx}`} className="rounded-xl border border-neutral-800 p-4 hover:border-neutral-600 transition">
-        <a href={url} target="_blank" rel="noopener noreferrer" className="text-[15px] underline" style={{ color: "#8b8989" }}>
-          {title}
-        </a>
-        {desc && <div className="mt-2 text-[13px]" style={{ color: "#8b8989" }}>{desc}</div>}
-        {contact && <div className="mt-1 text-[12px]" style={{ color: "#8b8989" }}>{contact}</div>}
-      </div>
-    );
-  }
-
-  // events
-  const title = item?.title || "Event";
-  const url = item?.url || "#";
-  return (
-    <div key={`${kind}-${idx}`} className="rounded-xl border border-neutral-800 p-4 hover:border-neutral-600 transition">
-      <a href={url} target="_blank" rel="noopener noreferrer" className="text-[15px] underline" style={{ color: "#8b8989" }}>
-        {title}
-      </a>
-    </div>
-  );
 }
 
 export default async function SearchPage(props: {
@@ -200,168 +94,208 @@ export default async function SearchPage(props: {
   const raw = sp.q;
   const q = Array.isArray(raw) ? raw[0] : raw ?? "";
 
-  // If no query, nudge back to landing
-  if (!q) {
-    return (
-      <main className="min-h-screen bg-black px-6 py-8">
-        <div className="max-w-6xl mx-auto" style={{ color: "#8b8989" }}>
-          <Link href="/" className="underline">← Back</Link>
-          <div className="mt-6">Type a search on the landing page.</div>
-        </div>
-      </main>
-    );
+  const base = getBaseUrl();
+
+  let json: RawAPI | null = null;
+  if (q) {
+    const res = await fetch(`${base}/api/ask?q=${encodeURIComponent(q)}`, {
+      cache: "no-store",
+    });
+    try {
+      json = (await res.json()) as RawAPI;
+    } catch {
+      json = { ok: false, status: res.status, body: await res.text() };
+    }
   }
 
-  const { data, structured } = await ask(q);
+  const sections = json ? parseStructured(json) : null;
 
-  // Normalize sections
-  const members = structured?.community_chats?.items ?? [];
-  const transcripts = structured?.transcripts?.items ?? [];
-  const resources = structured?.resources?.items ?? [];
-  const partnerships = structured?.partnerships?.items ?? [];
-  const events = structured?.events?.items ?? [];
-
-  // Hubs for “no items” click-through
-  const hubs = {
-    transcripts: structured?.transcripts?.section_url || "https://aplayers.com/hub/calls",
-    resources: structured?.resources?.section_url || "https://aplayers.com/hub/resources",
-    partnerships: structured?.partnerships?.section_url || "https://aplayers.com/hub/partners",
-    events: structured?.events?.section_url || "https://aplayers.com/hub/events",
-  };
+  // Initial counts (left: 4-5; right: 3)
+  const LEFT_COUNT = 5;
+  const RIGHT_COUNT = 3;
 
   return (
-    <main className="min-h-screen bg-black px-6 py-8">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* LEFT: search box + members */}
-        <div className="lg:col-span-2">
-          {/* Landing-style search pill */}
-          <form action="/search" method="get" className="mb-6 flex items-center justify-center">
+    <main className="results">
+      {/* Reuse the same faint background as landing */}
+      <div className="landing-wrap" aria-hidden="true" />
+
+      <div className="results-shell">
+        {/* LEFT: Search box + Members */}
+        <section className="results-left">
+          <form action="/search" method="get" className="results-search" role="search">
             <input
               name="q"
               defaultValue={q}
               placeholder="What’s your next move?"
-              className="w-[800px] h-[80px] rounded-full bg-transparent border-2"
-              style={{
-                borderColor: "#545454",
-                color: "#8b8989",
-                textAlign: "center",
-                fontSize: "18px",
-                outline: "none",
-                padding: "0 28px",
-              }}
+              className="input results-input"
+              autoFocus
             />
           </form>
 
-          {/* Members (no “(priority)” tag) */}
-          <div className="mb-3 uppercase tracking-wide text-sm" style={{ color: "#8b8989" }}>
-            Members
+          <div className="members-wrap">
+            {/* Title bar with “corner” ticks style from comp (simple line) */}
+            <div className="members-title-row" aria-hidden="true">
+              <span className="corner left" />
+              <span className="corner right" />
+            </div>
+
+            <h2 className="members-title">Members</h2>
+
+            {!sections && (
+              <p className="muted">Type a search above to see relevant members.</p>
+            )}
+
+            {sections && (
+              <>
+                <ul className="members-list">
+                  {(sections.members ?? []).slice(0, LEFT_COUNT).map((m, i) => {
+                    const name =
+                      m?.title ||
+                      m?.name ||
+                      m?.display_name ||
+                      "Member";
+                    const quote = m?.quote || m?.line || m?.excerpt;
+                    // Meta line (EXPERTISE etc.) — you can refine when you add real fields
+                    const meta =
+                      m?.role || m?.industry || m?.expertise || m?.username || "";
+
+                    return (
+                      <li key={`member-${i}`} className="member-card">
+                        <div className="member-head">
+                          <span className="member-name">{name}</span>
+                          {meta && (
+                            <>
+                              <span className="sep">|</span>
+                              <span className="member-meta">{String(meta).toUpperCase()}</span>
+                            </>
+                          )}
+                        </div>
+
+                        {quote && (
+                          <div className="member-quote">“{quote}”</div>
+                        )}
+
+                        {/* CONTACT line — wire up links later when you have canonical fields */}
+                        <div className="member-contact">CONTACT</div>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                {(sections.members ?? []).length > LEFT_COUNT && (
+                  <div className="load-more-row">
+                    <button className="load-more-btn" type="button" disabled>
+                      LOAD MORE
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
-          {members.length === 0 ? (
-            <div className="text-sm" style={{ color: "#8b8989" }}>
-              No directly relevant member messages found.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {members.slice(0, 5).map((m, i) => MemberCard(m, i))}
-              {members.length > 5 && (
-                <div className="text-right">
-                  <Link href={`/members?q=${encodeURIComponent(q)}`} className="text-xs underline" style={{ color: "#8b8989" }}>
-                    Load more
-                  </Link>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        </section>
 
-        {/* RIGHT: collapsible categories */}
-        <div className="lg:col-span-1 space-y-3">
-          {/* Call Recordings */}
-          <details className="group rounded-xl border border-neutral-900 p-3">
-            <summary className="list-none flex items-center justify-between cursor-pointer">
-              <span className="uppercase tracking-wide text-sm group-open:font-medium" style={{ color: "#8b8989" }}>
-                Call Recordings
-              </span>
-              <span className="text-neutral-500 group-open:rotate-90 transition">▸</span>
-            </summary>
-            <div className="mt-3 space-y-3">
-              {transcripts.length ? (
-                transcripts.slice(0, 3).map((it, i) => RightCard("transcripts", it, i))
-              ) : (
-                <Link href={hubs.transcripts} target="_blank" className="text-xs underline" style={{ color: "#8b8989" }}>
-                  See all call recordings
-                </Link>
-              )}
-            </div>
-          </details>
-
-          {/* Resources */}
-          <details className="group rounded-xl border border-neutral-900 p-3">
-            <summary className="list-none flex items-center justify-between cursor-pointer">
-              <span className="uppercase tracking-wide text-sm group-open:font-medium" style={{ color: "#8b8989" }}>
-                Resources
-              </span>
-              <span className="text-neutral-500 group-open:rotate-90 transition">▸</span>
-            </summary>
-            <div className="mt-3 space-y-3">
-              {resources.length ? (
-                resources.slice(0, 3).map((it, i) => RightCard("resources", it, i))
-              ) : (
-                <Link href={hubs.resources} target="_blank" className="text-xs underline" style={{ color: "#8b8989" }}>
-                  See all resources
-                </Link>
-              )}
-            </div>
-          </details>
-
-          {/* Partnerships */}
-          <details className="group rounded-xl border border-neutral-900 p-3">
-            <summary className="list-none flex items-center justify-between cursor-pointer">
-              <span className="uppercase tracking-wide text-sm group-open:font-medium" style={{ color: "#8b8989" }}>
-                Partnerships
-              </span>
-              <span className="text-neutral-500 group-open:rotate-90 transition">▸</span>
-            </summary>
-            <div className="mt-3 space-y-3">
-              {partnerships.length ? (
-                partnerships.slice(0, 3).map((it, i) => RightCard("partnerships", it, i))
-              ) : (
-                <Link href={hubs.partnerships} target="_blank" className="text-xs underline" style={{ color: "#8b8989" }}>
-                  See all partnerships
-                </Link>
-              )}
-            </div>
-          </details>
-
-          {/* Events */}
-          <details className="group rounded-xl border border-neutral-900 p-3">
-            <summary className="list-none flex items-center justify-between cursor-pointer">
-              <span className="uppercase tracking-wide text-sm group-open:font-medium" style={{ color: "#8b8989" }}>
-                Events
-              </span>
-              <span className="text-neutral-500 group-open:rotate-90 transition">▸</span>
-            </summary>
-            <div className="mt-3 space-y-3">
-              {events.length ? (
-                events.slice(0, 3).map((it, i) => RightCard("events", it, i))
-              ) : (
-                <Link href={hubs.events} target="_blank" className="text-xs underline" style={{ color: "#8b8989" }}>
-                  See all events
-                </Link>
-              )}
-            </div>
-          </details>
-        </div>
+        {/* RIGHT: Other categories as collapsibles */}
+        <aside className="results-right">
+          <RightSection
+            label="PARTNERSHIPS"
+            items={sections?.partnerships ?? []}
+            count={RIGHT_COUNT}
+            href="/partnerships"
+          />
+          <RightSection
+            label="CALL LIBRARY"
+            items={sections?.transcripts ?? []}
+            count={RIGHT_COUNT}
+            href="/calls"
+          />
+          <RightSection
+            label="RESOURCES"
+            items={sections?.resources ?? []}
+            count={RIGHT_COUNT}
+            href="/resources"
+          />
+          <RightSection
+            label="EVENTS"
+            items={sections?.events ?? []}
+            count={RIGHT_COUNT}
+            href="/events"
+          />
+          <div className="other-footer">OTHER</div>
+        </aside>
       </div>
-
-      {/* Debug fallback: if nothing structured, show raw */}
-      {!structured && (
-        <div className="max-w-6xl mx-auto mt-8">
-          <pre className="text-xs whitespace-pre-wrap rounded-lg border border-neutral-900 p-4" style={{ color: "#8b8989" }}>
-            {JSON.stringify(data, null, 2)}
-          </pre>
-        </div>
-      )}
     </main>
+  );
+}
+
+/** Right hand collapsible section (dropdown when arrow is clicked). */
+function RightSection({
+  label,
+  items,
+  count,
+  href,
+}: {
+  label: string;
+  items: any[];
+  count: number;
+  href: string;
+}) {
+  if (!items || items.length === 0) {
+    // No relevant items → clicking the heading should navigate to the category page
+    return (
+      <div className="right-head no-items">
+        <Link href={href} className="right-title">
+          {label}
+        </Link>
+        <Link href={href} className="right-arrow" aria-label={`Go to ${label}`}>
+          ▸
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <details className="right-acc">
+      <summary className="right-head">
+        <span className="right-title">{label}</span>
+        <span className="right-arrow" aria-hidden>
+          ▸
+        </span>
+      </summary>
+
+      <div className="right-body">
+        <ul className="right-list">
+          {items.slice(0, count).map((it: any, i: number) => {
+            const title =
+              it?.title ||
+              it?.name ||
+              it?.display_name ||
+              "Untitled";
+            const quote = it?.quote || it?.summary || it?.description;
+            const url = it?.url;
+
+            return (
+              <li key={`${label}-${i}`} className="right-card">
+                {url ? (
+                  <a href={url} target="_blank" rel="noreferrer" className="right-card-title">
+                    {title}
+                  </a>
+                ) : (
+                  <div className="right-card-title">{title}</div>
+                )}
+                {quote && <div className="right-card-sub">{quote}</div>}
+              </li>
+            );
+          })}
+        </ul>
+
+        {items.length > count && (
+          <div className="right-loadmore">
+            <button className="load-more-btn" type="button" disabled>
+              LOAD MORE
+            </button>
+          </div>
+        )}
+      </div>
+    </details>
   );
 }

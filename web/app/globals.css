@@ -385,3 +385,198 @@ html, body {
 /* Utility: back link align on small screens too */
 .back-link { color: var(--apc-muted); }
 .back-link:hover { color: #fff; }
+
+/* ===== Search Results Layout ===== */
+.results {
+  min-height: 100vh;
+  color: #8b8989;                    /* global tone per your spec */
+  position: relative;
+  background: #000;
+}
+
+.results .landing-wrap {
+  opacity: 0.22;                     /* faint, like landing */
+}
+
+/* Outer shell with two equal columns */
+.results-shell {
+  position: relative;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 70px 24px 80px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+}
+
+/* LEFT column */
+.results-left {
+  position: relative;
+}
+
+.results-search {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 26px;
+}
+.results-input {
+  width: 800px;                      /* match landing */
+  height: 80px;                      /* match landing */
+  border: 2px solid #545454;
+  border-radius: 999px;
+  background: transparent;
+  color: #545454;
+  text-align: center;
+  font-size: 18px;
+  outline: none;
+  padding: 0 28px;
+}
+.results-input::placeholder { color: #545454; opacity: 0.6; }
+
+/* Members block (title “corners” and list) */
+.members-wrap { margin-top: 8px; }
+.members-title-row {
+  height: 26px;
+  position: relative;
+  margin-bottom: 6px;
+}
+.members-title-row .corner {
+  position: absolute;
+  top: 0;
+  width: 46px;
+  height: 26px;
+  border-top: 2px solid #545454;
+  border-left: 2px solid #545454;
+  opacity: 0.6;
+}
+.members-title-row .corner.right {
+  right: 0;
+  left: auto;
+  border-left: 0;
+  border-right: 2px solid #545454;
+}
+.members-title {
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  text-transform: none;   /* “Members” (no (priority)) */
+  margin: 0 0 6px 0;
+  color: #8b8989;
+}
+
+.members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.member-card {
+  border-bottom: 1px solid rgba(84,84,84,0.6);
+  padding-bottom: 14px;
+}
+.member-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.member-name {
+  font-size: 20px;
+  color: #8b8989;
+}
+.member-meta {
+  font-size: 16px;
+  letter-spacing: 0.06em;
+  color: #8b8989;
+  opacity: 0.75;
+}
+.member-quote {
+  margin-top: 8px;
+  font-style: italic;
+  color: #8b8989;
+  opacity: 0.9;
+}
+.member-contact {
+  margin-top: 6px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #8b8989;
+}
+
+.load-more-row { margin-top: 14px; }
+.load-more-btn {
+  background: none;
+  border: none;
+  color: #8b8989;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  opacity: 0.75;
+  cursor: not-allowed; /* stub for now */
+}
+
+/* RIGHT column */
+.results-right {
+  position: relative;
+  padding-left: 8px;
+}
+
+/* Head row (title + arrow). When there are no items it navigates. */
+.right-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 2px;
+}
+.right-head.no-items .right-title,
+.right-head.no-items .right-arrow {
+  text-decoration: none;
+}
+
+.right-title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #8b8989;
+}
+.right-arrow {
+  color: #8b8989;
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+/* details/summary styling */
+.right-acc {
+  border-bottom: 1px solid rgba(84,84,84,0.35);
+  margin-bottom: 10px;
+}
+.right-acc[open] .right-arrow { transform: rotate(90deg); }
+
+/* Cards inside the dropdown */
+.right-body { padding: 8px 2px 16px; }
+.right-list { display: flex; flex-direction: column; gap: 14px; }
+.right-card-title {
+  font-size: 16px;
+  color: #8b8989;
+  text-decoration: none;
+}
+.right-card-title:hover { text-decoration: underline; }
+.right-card-sub {
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+.right-loadmore { margin-top: 10px; }
+
+.other-footer {
+  margin-top: 32px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  opacity: 0.5;
+  color: #8b8989;
+}
+
+/* Make it stack on small screens */
+@media (max-width: 1000px) {
+  .results-shell { grid-template-columns: 1fr; gap: 36px; }
+  .results-right { padding-left: 0; }
+  .results-input { width: min(800px, 96%); }
+}
