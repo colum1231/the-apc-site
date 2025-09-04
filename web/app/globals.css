@@ -163,14 +163,14 @@ html, body {
   top: 120px;              /* target the TOP edge */
   left: 50%;
   transform: translateX(-50%); /* only horizontal centering */
-  width: 200px;            
+  width: 120px;            
   height: auto;
 }
 
 /* Search bar: centered, 800×80, outlined */
 .search{
   position: fixed;
-  top: 400px;             /* top of box */
+  top: 525px;             /* top of box */
   left: 50%;
   transform: translateX(-50%);
   width: 350px;
