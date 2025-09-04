@@ -201,7 +201,7 @@ html, body {
   left: 50%;
   transform: translateX(-50%);
   bottom: 28px;
-  font-size: 20px;
+  font-size: 18px;
   color: var(--hq-color);
   opacity: 0.5;
   text-decoration: none;
@@ -216,3 +216,172 @@ html, body {
 html, body {
   background: #000 url("/landing-bg.png") center / cover no-repeat fixed;
 }
+
+/* ===== Results Page ===== */
+:root {
+  --apc-bg: #000;
+  --apc-text: #8b8989;         /* sitewide request */
+  --apc-muted: #a3a3a3;
+  --apc-border: #2b2b2b;
+  --apc-card: #0d0d0d;
+  --apc-card-hover: #151515;
+  --apc-pill-outline: #545454;
+}
+
+/* Make sure default text color matches your request */
+.results-wrap,
+.results-wrap * {
+  color: var(--apc-text);
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+/* Page container */
+.results-wrap {
+  min-height: 100vh;
+  background: var(--apc-bg);
+  padding: 24px;
+}
+
+/* Header row (Back + query) */
+.results-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto 16px;
+}
+
+.results-head a {
+  color: var(--apc-muted);
+  text-decoration: none;
+}
+.results-head a:hover { color: #fff; }
+
+/* Grid: left = 2 cols, right = 1 col on large screens */
+.results-grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+@media (min-width: 1024px) {
+  .results-grid {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+/* Search pill (same vibe as landing) */
+.searchbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.searchbar form {
+  width: 100%;
+  max-width: 800px;
+}
+.search-input {
+  width: 100%;
+  height: 64px;                 /* slightly smaller than landing */
+  border: 2px solid var(--apc-pill-outline);
+  border-radius: 999px;
+  background: transparent;
+  outline: none;
+  padding: 0 28px;
+  font-size: 18px;
+  text-align: center;
+}
+.search-input::placeholder {
+  color: var(--apc-pill-outline);
+  opacity: 0.6;
+}
+
+/* Left column (members list) */
+.section-title {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 13px;
+  color: var(--apc-muted);
+  margin-bottom: 8px;
+}
+.cards {
+  display: grid;
+  gap: 12px;
+}
+.card {
+  background: var(--apc-card);
+  border: 1px solid var(--apc-border);
+  border-radius: 12px;
+  padding: 14px;
+  transition: background .15s ease, border-color .15s ease, transform .15s ease;
+}
+.card:hover {
+  background: var(--apc-card-hover);
+  border-color: #3a3a3a;
+}
+.card-title {
+  font-size: 15px;
+  color: #d6d6d6;
+}
+.card-sub {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #a9a9a9;
+  font-style: italic;
+}
+.card-meta {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #7d7d7d;
+}
+
+/* Right column (collapsible categories) */
+.dropdown {
+  border-bottom: 1px solid var(--apc-border);
+  padding: 12px 0;
+}
+.dropdown summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+.dropdown summary .label {
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--apc-muted);
+}
+.dropdown[open] summary .label { color: #fff; }
+.dropdown summary .chev {
+  color: var(--apc-muted);
+  transition: transform .15s ease, color .15s ease;
+}
+.dropdown[open] summary .chev {
+  transform: rotate(90deg);
+  color: #fff;
+}
+.dropdown-content {
+  margin-top: 10px;
+  display: grid;
+  gap: 12px;
+}
+
+/* “Load more” link */
+.load-more {
+  text-align: right;
+  margin-top: 6px;
+}
+.load-more a {
+  font-size: 12px;
+  color: var(--apc-muted);
+  text-decoration: underline;
+}
+.load-more a:hover { color: #fff; }
+
+/* Utility: back link align on small screens too */
+.back-link { color: var(--apc-muted); }
+.back-link:hover { color: #fff; }
