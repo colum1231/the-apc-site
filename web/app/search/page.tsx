@@ -5,30 +5,46 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
-type SectionKey = "transcripts" | "community_chats" | "resources" | "partnerships" | "events";
+type SectionKey = "members" | "transcripts" | "resources" | "partnerships" | "events";
 
-type Sections = {
-  transcripts?: { title?: string; url?: string; name?: string; quote?: string; context?: string; source?: string }[];
+type StructuredResponse = {
+  transcripts?: {
+    section_title?: string;
+    section_url?: string;
+    items?: Array<{ title?: string; url?: string; quote?: string; name?: string; context?: string }>;
+    load_more_token?: string;
+  };
   community_chats?: {
-    title?: string; // "Name | Industry/Title | @username // phone"
-    name?: string;
-    username?: string; // "@handle"
-    username_url?: string;
-    quote?: string;
-    context?: string;
-    source?: string;
-  }[];
-  resources?: { title?: string; summary?: string; url?: string; source?: string }[];
-  partnerships?: { title?: string; description?: string; contact_line?: string; url?: string; source?: string }[];
-  events?: { title?: string; url?: string; source?: string }[];
-};
-
-type Envelope = {
-  transcripts?: { section_title?: string; section_url?: string; items?: Sections["transcripts"]; load_more_token?: string };
-  community_chats?: { section_title?: string; section_url?: string; items?: Sections["community_chats"]; load_more_token?: string };
-  resources?: { section_title?: string; section_url?: string; items?: Sections["resources"]; load_more_token?: string };
-  partnerships?: { section_title?: string; section_url?: string; items?: Sections["partnerships"]; load_more_token?: string };
-  events?: { section_title?: string; section_url?: string; items?: Sections["events"]; load_more_token?: string };
+    section_title?: string;
+    section_url?: string;
+    items?: Array<{
+      title?: string; // "Name | Industry/Title | TG: @user // +353 ..."
+      username?: string; // "@handle" or "handle"
+      username_url?: string; // https://t.me/handle
+      quote?: string;
+      context?: string;
+      source?: string;
+    }>;
+    load_more_token?: string;
+  };
+  resources?: {
+    section_title?: string;
+    section_url?: string;
+    items?: Array<{ title?: string; summary?: string; url?: string }>;
+    load_more_token?: string;
+  };
+  partnerships?: {
+    section_title?: string;
+    section_url?: string;
+    items?: Array<{ title?: string; description?: string; contact_line?: string; url?: string }>;
+    load_more_token?: string;
+  };
+  events?: {
+    section_title?: string;
+    section_url?: string;
+    items?: Array<{ title?: string; url?: string }>;
+    load_more_token?: string;
+  };
 };
 
 function getBaseUrl() {
@@ -37,336 +53,315 @@ function getBaseUrl() {
   return "http://localhost:3000";
 }
 
-function parseMaybeJsonBlock(body: unknown): Envelope | null {
-  // Body from /api/ask can be {ok:true,data:{…}} or the data may include a string with ```json … ```
-  const unwrap = (x: any) => (x && x.data ? x.data : x);
-  const raw = unwrap(body);
+/** Pulls JSON from /api/ask and returns either structured data or a raw object. */
+async function ask(q: string): Promise<{ data: any; structured: StructuredResponse | null }> {
+  const url = `${getBaseUrl()}/api/ask?q=${encodeURIComponent(q)}`;
+  const res = await fetch(url, { cache: "no-store" });
 
-  // Already an object with sections
-  if (raw && typeof raw === "object" && ("transcripts" in raw || "community_chats" in raw)) {
-    return raw as Envelope;
-  }
-
-  // Might be string with ```json fenced block
-  const str = typeof raw === "string" ? raw : (typeof (raw as any)?.openai_response === "string" ? (raw as any).openai_response : null);
-  if (!str) return null;
-
-  const fence = /```json\s*([\s\S]*?)```/i.exec(str);
-  const candidate = fence ? fence[1] : str;
+  let payload: any;
   try {
-    const parsed = JSON.parse(candidate);
-    if (parsed && typeof parsed === "object") return parsed as Envelope;
+    payload = await res.json();
   } catch {
-    // ignore
+    payload = { ok: false, status: res.status, body: await res.text() };
   }
-  return null;
-}
 
-// Display helper: trim to max words for UI (non-authoritative)
-function trimWords(s?: string, max = 14) {
-  if (!s) return s;
-  const parts = s.trim().split(/\s+/);
-  return parts.length > max ? parts.slice(0, max).join(" ") + "…" : s;
-}
+  // Try to extract structured sections if the bot returned a ```json code block
+  let structured: StructuredResponse | null = null;
+  const openai = payload?.data?.openai_response ?? payload?.openai_response ?? payload;
 
-// Hide empty @username / phone fragments in the composed title
-function normalizeMemberTitle(input?: string, username?: string) {
-  if (!input) return "";
-  let t = input;
-
-  // If username is missing or blank, remove " | @username" and variants
-  const hasUser = !!(username && username.replace("@", "").trim());
-  if (!hasUser) {
-    t = t.replace(/\s*\|\s*@[^/]+/g, ""); // remove " | @handle"
+  if (typeof openai === "string") {
+    const m = openai.match(/```json\s*([\s\S]*?)```/i);
+    if (m) {
+      try {
+        structured = JSON.parse(m[1]);
+      } catch {
+        structured = null;
+      }
+    }
+  } else if (
+    openai &&
+    (openai.transcripts || openai.community_chats || openai.resources || openai.partnerships || openai.events)
+  ) {
+    structured = openai as StructuredResponse;
   }
-  // Remove orphaned "// phone" if it ends with // … and no actual digits
-  t = t.replace(/\s*\/\/\s*(?:\+?[()\d\s-]{0,3})?\.{0,3}\s*$/g, "");
 
-  // Squash duplicate spaces / separators
-  t = t.replace(/\s{2,}/g, " ").replace(/\s\|\s\|\s/g, " | ").trim();
-  return t;
+  return { data: payload, structured };
 }
 
-function SectionHeader({
-  label,
-  href,
-  collapsible = false,
-}: {
-  label: string;
-  href: string;
-  collapsible?: boolean;
-}) {
+/** Clean handle like "@name" -> "name" */
+function normalizeHandle(u?: string) {
+  if (!u) return "";
+  return u.replace(/^@/, "");
+}
+
+/** Render a single member card (left column). */
+function MemberCard(item: any, idx: number) {
+  const title = item?.title || item?.name || "Member";
+  const quote = item?.quote;
+  const handle = normalizeHandle(item?.username);
+  const tgUrl = item?.username_url || (handle ? `https://t.me/${handle}` : "");
+
+  // Build “Name | Industry/Title | TG: @user // phone” display, but respect your rules:
+  // - If no username, omit TG.
+  // - We only render what's present; no fabrication.
+  const header = title;
+
   return (
-    <div className="flex items-center justify-between border-b border-neutral-800 pb-2">
-      <Link href={href} className="uppercase tracking-wide text-sm text-neutral-400 hover:text-white">
-        {label}
-      </Link>
-      {collapsible && <span className="text-neutral-500">▸</span>}
+    <div
+      key={`member-${idx}`}
+      className="rounded-xl border border-neutral-800 p-4 hover:border-neutral-600 transition"
+      style={{ color: "#8b8989" }}
+    >
+      <div className="text-[15px] font-medium">{header}</div>
+      {quote && (
+        <div className="mt-2 text-[13px] italic">
+          “{quote}”
+        </div>
+      )}
+      {handle && (
+        <div className="mt-1 text-[12px]">
+          TG:{" "}
+          <a href={tgUrl} target="_blank" rel="noopener noreferrer" className="underline">
+            @{handle}
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Render a generic item card (right column), link only the title. */
+function RightCard(
+  kind: Exclude<SectionKey, "members">,
+  item: any,
+  idx: number
+) {
+  if (kind === "transcripts") {
+    const title = item?.title || item?.name || "Call Recording";
+    const url = item?.url || "#";
+    const quote = item?.quote;
+    return (
+      <div key={`${kind}-${idx}`} className="rounded-xl border border-neutral-800 p-4 hover:border-neutral-600 transition">
+        <a href={url} target="_blank" rel="noopener noreferrer" className="text-[15px] underline" style={{ color: "#8b8989" }}>
+          {title}
+        </a>
+        {quote && <div className="mt-2 text-[13px] italic" style={{ color: "#8b8989" }}>“{quote}”</div>}
+      </div>
+    );
+  }
+
+  if (kind === "resources") {
+    const title = item?.title || "Resource";
+    const url = item?.url || "#";
+    const summary = item?.summary;
+    return (
+      <div key={`${kind}-${idx}`} className="rounded-xl border border-neutral-800 p-4 hover:border-neutral-600 transition">
+        <a href={url} target="_blank" rel="noopener noreferrer" className="text-[15px] underline" style={{ color: "#8b8989" }}>
+          {title}
+        </a>
+        {summary && <div className="mt-2 text-[13px]" style={{ color: "#8b8989" }}>{summary}</div>}
+      </div>
+    );
+  }
+
+  if (kind === "partnerships") {
+    const title = item?.title || "Partner";
+    const url = item?.url || "#";
+    const desc = item?.description;
+    const contact = item?.contact_line; // We’ll display as-is (your prompt logic already formats it)
+    return (
+      <div key={`${kind}-${idx}`} className="rounded-xl border border-neutral-800 p-4 hover:border-neutral-600 transition">
+        <a href={url} target="_blank" rel="noopener noreferrer" className="text-[15px] underline" style={{ color: "#8b8989" }}>
+          {title}
+        </a>
+        {desc && <div className="mt-2 text-[13px]" style={{ color: "#8b8989" }}>{desc}</div>}
+        {contact && <div className="mt-1 text-[12px]" style={{ color: "#8b8989" }}>{contact}</div>}
+      </div>
+    );
+  }
+
+  // events
+  const title = item?.title || "Event";
+  const url = item?.url || "#";
+  return (
+    <div key={`${kind}-${idx}`} className="rounded-xl border border-neutral-800 p-4 hover:border-neutral-600 transition">
+      <a href={url} target="_blank" rel="noopener noreferrer" className="text-[15px] underline" style={{ color: "#8b8989" }}>
+        {title}
+      </a>
     </div>
   );
 }
 
 export default async function SearchPage(props: {
+  // Next 15: searchParams is a Promise
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const sp = await props.searchParams;
   const raw = sp.q;
   const q = Array.isArray(raw) ? raw[0] : raw ?? "";
 
+  // If no query, nudge back to landing
   if (!q) {
     return (
-      <main className="min-h-screen bg-black text-white p-8">
-        <div className="max-w-6xl mx-auto">
-          <Link href="/" className="text-neutral-400 hover:text-white">← Back</Link>
-          <h1 className="text-2xl mt-6">Search</h1>
-          <p className="mt-2 text-neutral-400">Type something on the landing page.</p>
+      <main className="min-h-screen bg-black px-6 py-8">
+        <div className="max-w-6xl mx-auto" style={{ color: "#8b8989" }}>
+          <Link href="/" className="underline">← Back</Link>
+          <div className="mt-6">Type a search on the landing page.</div>
         </div>
       </main>
     );
   }
 
-  const url = `${getBaseUrl()}/api/ask?q=${encodeURIComponent(q)}`;
-  const res = await fetch(url, { cache: "no-store" });
+  const { data, structured } = await ask(q);
 
-  let body: any;
-  try {
-    body = await res.json();
-  } catch {
-    body = { ok: false, status: res.status, body: await res.text() };
-  }
+  // Normalize sections
+  const members = structured?.community_chats?.items ?? [];
+  const transcripts = structured?.transcripts?.items ?? [];
+  const resources = structured?.resources?.items ?? [];
+  const partnerships = structured?.partnerships?.items ?? [];
+  const events = structured?.events?.items ?? [];
 
-  // Prefer nested .body / .data shapes from our API result
-  const candidate = body?.body ?? body?.data ?? body;
-  const parsed = parseMaybeJsonBlock(candidate) || parseMaybeJsonBlock(body) || null;
-
-  const members = parsed?.community_chats?.items ?? [];
-  const transcripts = parsed?.transcripts?.items ?? [];
-  const resources = parsed?.resources?.items ?? [];
-  const partnerships = parsed?.partnerships?.items ?? [];
-  const events = parsed?.events?.items ?? [];
-
-  const priority: SectionKey = members.length > 0 ? "community_chats" : (["transcripts", "resources", "partnerships", "events"] as SectionKey[]).find(
-    (k) => (parsed as any)?.[k]?.items?.length > 0
-  ) || "community_chats";
-
-  const sideOrder: SectionKey[] = (["community_chats", "transcripts", "resources", "partnerships", "events"] as SectionKey[])
-    .filter((k) => k !== priority);
+  // Hubs for “no items” click-through
+  const hubs = {
+    transcripts: structured?.transcripts?.section_url || "https://aplayers.com/hub/calls",
+    resources: structured?.resources?.section_url || "https://aplayers.com/hub/resources",
+    partnerships: structured?.partnerships?.section_url || "https://aplayers.com/hub/partners",
+    events: structured?.events?.section_url || "https://aplayers.com/hub/events",
+  };
 
   return (
-    <main className="min-h-screen bg-black text-white p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Top bar */}
-        <div className="flex items-center justify-between">
-          <Link href="/" className="text-neutral-400 hover:text-white">← Back</Link>
-          <div className="text-neutral-400">Your search: <span className="text-white">{q}</span></div>
+    <main className="min-h-screen bg-black px-6 py-8">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* LEFT: search box + members */}
+        <div className="lg:col-span-2">
+          {/* Landing-style search pill */}
+          <form action="/search" method="get" className="mb-6 flex items-center justify-center">
+            <input
+              name="q"
+              defaultValue={q}
+              placeholder="What’s your next move?"
+              className="w-[800px] h-[80px] rounded-full bg-transparent border-2"
+              style={{
+                borderColor: "#545454",
+                color: "#8b8989",
+                textAlign: "center",
+                fontSize: "18px",
+                outline: "none",
+                padding: "0 28px",
+              }}
+            />
+          </form>
+
+          {/* Members (no “(priority)” tag) */}
+          <div className="mb-3 uppercase tracking-wide text-sm" style={{ color: "#8b8989" }}>
+            Members
+          </div>
+          {members.length === 0 ? (
+            <div className="text-sm" style={{ color: "#8b8989" }}>
+              No directly relevant member messages found.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {members.slice(0, 5).map((m, i) => MemberCard(m, i))}
+              {members.length > 5 && (
+                <div className="text-right">
+                  <Link href={`/members?q=${encodeURIComponent(q)}`} className="text-xs underline" style={{ color: "#8b8989" }}>
+                    Load more
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* If the model didn’t give structured JSON, show raw for debugging */}
-        {!parsed && (
-          <pre className="mt-6 text-sm bg-neutral-900/60 rounded-lg p-4 overflow-auto">
-            {JSON.stringify(body, null, 2)}
-          </pre>
-        )}
-
-        {parsed && (
-          <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* LEFT: Priority section (spans 2 columns) */}
-            <div className="lg:col-span-2">
-              <div className="mb-3 uppercase tracking-wide text-sm text-neutral-300">
-                {priority === "community_chats"
-                  ? "Members (priority)"
-                  : priority === "transcripts"
-                  ? "Call Recordings (priority)"
-                  : priority.charAt(0).toUpperCase() + priority.slice(1) + " (priority)"}
-              </div>
-
-              <div className="space-y-3">
-                {(priority === "community_chats" ? members : (priority === "transcripts" ? transcripts : priority === "resources" ? resources : priority === "partnerships" ? partnerships : events))
-                  .slice(0, priority === "community_chats" ? 5 : 3)
-                  .map((it: any, i: number) => {
-                    if (priority === "community_chats") {
-                      const title = normalizeMemberTitle(it?.title || it?.name, it?.username);
-                      const quote = trimWords(it?.quote, 14);
-                      const handle = (it?.username || "").replace(/^@/, "");
-                      const uurl = handle ? `https://t.me/${handle}` : undefined;
-
-                      return (
-                        <div key={`m-${i}`} className="rounded-xl border border-neutral-800 p-4 hover:border-neutral-500/70 transition">
-                          <div className="text-[15px] text-neutral-200">{title || "Member"}</div>
-                          {quote && <div className="mt-2 text-[13px] text-neutral-400 italic">“{quote}”</div>}
-                          {uurl && (
-                            <div className="mt-1 text-[12px]">
-                              <a href={uurl} className="text-neutral-400 hover:text-white">@{handle}</a>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    }
-
-                    if (priority === "transcripts") {
-                      const title = it?.title || it?.name || "Transcript";
-                      const quote = trimWords(it?.quote, 14);
-                      const url = it?.url;
-                      return (
-                        <a key={`t-${i}`} href={url || "#"} target={url ? "_blank" : "_self"} className="block rounded-xl border border-neutral-800 p-4 hover:border-neutral-500/70 transition">
-                          <div className="text-[15px] text-neutral-200">{title}</div>
-                          {quote && <div className="mt-2 text-[13px] text-neutral-400 italic">“{quote}”</div>}
-                        </a>
-                      );
-                    }
-
-                    if (priority === "resources") {
-                      const title = it?.title || "Resource";
-                      const summary = it?.summary;
-                      const url = it?.url;
-                      return (
-                        <a key={`r-${i}`} href={url || "#"} target={url ? "_blank" : "_self"} className="block rounded-xl border border-neutral-800 p-4 hover:border-neutral-500/70 transition">
-                          <div className="text-[15px] text-neutral-200">{title}</div>
-                          {summary && <div className="mt-2 text-[13px] text-neutral-400">{summary}</div>}
-                        </a>
-                      );
-                    }
-
-                    if (priority === "partnerships") {
-                      const title = it?.title || "Partner";
-                      const desc = it?.description;
-                      const contact = it?.contact_line;
-                      const url = it?.url;
-                      return (
-                        <a key={`p-${i}`} href={url || "#"} target={url ? "_blank" : "_self"} className="block rounded-xl border border-neutral-800 p-4 hover:border-neutral-500/70 transition">
-                          <div className="text-[15px] text-neutral-200">{title}</div>
-                          {desc && <div className="mt-2 text-[13px] text-neutral-400">{desc}</div>}
-                          {contact && <div className="mt-1 text-[12px] text-neutral-500">{contact}</div>}
-                        </a>
-                      );
-                    }
-
-                    // events
-                    const title = it?.title || "Event";
-                    const url = it?.url;
-                    return (
-                      <a key={`e-${i}`} href={url || "#"} target={url ? "_blank" : "_self"} className="block rounded-xl border border-neutral-800 p-4 hover:border-neutral-500/70 transition">
-                        <div className="text-[15px] text-neutral-200">{title}</div>
-                      </a>
-                    );
-                  })}
-                {/* Load more link */}
-                {((priority === "community_chats" && members.length > 5) ||
-                  (priority !== "community_chats" && (parsed as any)[priority]?.items?.length > 3)) && (
-                  <div className="text-right">
-                    <Link href={`/${priority}`} className="text-xs text-neutral-400 hover:text-white underline">
-                      Load more
-                    </Link>
-                  </div>
-                )}
-              </div>
+        {/* RIGHT: collapsible categories */}
+        <div className="lg:col-span-1 space-y-3">
+          {/* Call Recordings */}
+          <details className="group rounded-xl border border-neutral-900 p-3">
+            <summary className="list-none flex items-center justify-between cursor-pointer">
+              <span className="uppercase tracking-wide text-sm group-open:font-medium" style={{ color: "#8b8989" }}>
+                Call Recordings
+              </span>
+              <span className="text-neutral-500 group-open:rotate-90 transition">▸</span>
+            </summary>
+            <div className="mt-3 space-y-3">
+              {transcripts.length ? (
+                transcripts.slice(0, 3).map((it, i) => RightCard("transcripts", it, i))
+              ) : (
+                <Link href={hubs.transcripts} target="_blank" className="text-xs underline" style={{ color: "#8b8989" }}>
+                  See all call recordings
+                </Link>
+              )}
             </div>
+          </details>
 
-            {/* RIGHT: Other sections (collapsibles) */}
-            <div className="lg:col-span-1">
-              <div className="space-y-4">
-                {sideOrder.map((k) => {
-                  const block = (parsed as any)?.[k];
-                  const items = block?.items ?? [];
-                  const label =
-                    k === "community_chats" ? "Members"
-                    : k === "transcripts" ? "Call Recordings"
-                    : k.charAt(0).toUpperCase() + k.slice(1);
-
-                  if (items.length === 0) {
-                    // No strong match → link to hub page
-                    return (
-                      <div key={k} className="rounded-xl border border-neutral-800 p-4">
-                        <SectionHeader label={label} href={block?.section_url || "/"} />
-                        <div className="text-[13px] text-neutral-500 mt-3">
-                          See all available {label.toLowerCase()} in the APC Hub.
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div key={k} className="rounded-xl border border-neutral-800 p-4">
-                      <SectionHeader label={label} href={block?.section_url || "/"} collapsible />
-                      <div className="mt-3 space-y-3">
-                        {items.slice(0, 3).map((it: any, i: number) => {
-                          if (k === "community_chats") {
-                            const title = normalizeMemberTitle(it?.title || it?.name, it?.username);
-                            const quote = trimWords(it?.quote, 14);
-                            const handle = (it?.username || "").replace(/^@/, "");
-                            const uurl = handle ? `https://t.me/${handle}` : undefined;
-                            return (
-                              <div key={`${k}-${i}`} className="rounded-lg border border-neutral-800 p-3">
-                                <div className="text-[15px] text-neutral-200">{title || "Member"}</div>
-                                {quote && <div className="mt-1 text-[13px] text-neutral-400 italic">“{quote}”</div>}
-                                {uurl && (
-                                  <div className="mt-1 text-[12px]">
-                                    <a href={uurl} className="text-neutral-400 hover:text-white">@{handle}</a>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          }
-                          if (k === "transcripts") {
-                            const title = it?.title || it?.name || "Transcript";
-                            const quote = trimWords(it?.quote, 14);
-                            const url = it?.url;
-                            return (
-                              <a key={`${k}-${i}`} href={url || "#"} target={url ? "_blank" : "_self"} className="block rounded-lg border border-neutral-800 p-3">
-                                <div className="text-[15px] text-neutral-200">{title}</div>
-                                {quote && <div className="mt-1 text-[13px] text-neutral-400 italic">“{quote}”</div>}
-                              </a>
-                            );
-                          }
-                          if (k === "resources") {
-                            const title = it?.title || "Resource";
-                            const summary = it?.summary;
-                            const url = it?.url;
-                            return (
-                              <a key={`${k}-${i}`} href={url || "#"} target={url ? "_blank" : "_self"} className="block rounded-lg border border-neutral-800 p-3">
-                                <div className="text-[15px] text-neutral-200">{title}</div>
-                                {summary && <div className="mt-1 text-[13px] text-neutral-400">{summary}</div>}
-                              </a>
-                            );
-                          }
-                          if (k === "partnerships") {
-                            const title = it?.title || "Partner";
-                            const desc = it?.description;
-                            const contact = it?.contact_line;
-                            const url = it?.url;
-                            return (
-                              <a key={`${k}-${i}`} href={url || "#"} target={url ? "_blank" : "_self"} className="block rounded-lg border border-neutral-800 p-3">
-                                <div className="text-[15px] text-neutral-200">{title}</div>
-                                {desc && <div className="mt-1 text-[13px] text-neutral-400">{desc}</div>}
-                                {contact && <div className="mt-1 text-[12px] text-neutral-500">{contact}</div>}
-                              </a>
-                            );
-                          }
-                          // events
-                          const title = it?.title || "Event";
-                          const url = it?.url;
-                          return (
-                            <a key={`${k}-${i}`} href={url || "#"} target={url ? "_blank" : "_self"} className="block rounded-lg border border-neutral-800 p-3">
-                              <div className="text-[15px] text-neutral-200">{title}</div>
-                            </a>
-                          );
-                        })}
-                        {items.length > 3 && (
-                          <div className="text-right">
-                            <Link href={`/${k}`} className="text-xs text-neutral-400 hover:text-white underline">
-                              Load more
-                            </Link>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+          {/* Resources */}
+          <details className="group rounded-xl border border-neutral-900 p-3">
+            <summary className="list-none flex items-center justify-between cursor-pointer">
+              <span className="uppercase tracking-wide text-sm group-open:font-medium" style={{ color: "#8b8989" }}>
+                Resources
+              </span>
+              <span className="text-neutral-500 group-open:rotate-90 transition">▸</span>
+            </summary>
+            <div className="mt-3 space-y-3">
+              {resources.length ? (
+                resources.slice(0, 3).map((it, i) => RightCard("resources", it, i))
+              ) : (
+                <Link href={hubs.resources} target="_blank" className="text-xs underline" style={{ color: "#8b8989" }}>
+                  See all resources
+                </Link>
+              )}
             </div>
-          </div>
-        )}
+          </details>
+
+          {/* Partnerships */}
+          <details className="group rounded-xl border border-neutral-900 p-3">
+            <summary className="list-none flex items-center justify-between cursor-pointer">
+              <span className="uppercase tracking-wide text-sm group-open:font-medium" style={{ color: "#8b8989" }}>
+                Partnerships
+              </span>
+              <span className="text-neutral-500 group-open:rotate-90 transition">▸</span>
+            </summary>
+            <div className="mt-3 space-y-3">
+              {partnerships.length ? (
+                partnerships.slice(0, 3).map((it, i) => RightCard("partnerships", it, i))
+              ) : (
+                <Link href={hubs.partnerships} target="_blank" className="text-xs underline" style={{ color: "#8b8989" }}>
+                  See all partnerships
+                </Link>
+              )}
+            </div>
+          </details>
+
+          {/* Events */}
+          <details className="group rounded-xl border border-neutral-900 p-3">
+            <summary className="list-none flex items-center justify-between cursor-pointer">
+              <span className="uppercase tracking-wide text-sm group-open:font-medium" style={{ color: "#8b8989" }}>
+                Events
+              </span>
+              <span className="text-neutral-500 group-open:rotate-90 transition">▸</span>
+            </summary>
+            <div className="mt-3 space-y-3">
+              {events.length ? (
+                events.slice(0, 3).map((it, i) => RightCard("events", it, i))
+              ) : (
+                <Link href={hubs.events} target="_blank" className="text-xs underline" style={{ color: "#8b8989" }}>
+                  See all events
+                </Link>
+              )}
+            </div>
+          </details>
+        </div>
       </div>
+
+      {/* Debug fallback: if nothing structured, show raw */}
+      {!structured && (
+        <div className="max-w-6xl mx-auto mt-8">
+          <pre className="text-xs whitespace-pre-wrap rounded-lg border border-neutral-900 p-4" style={{ color: "#8b8989" }}>
+            {JSON.stringify(data, null, 2)}
+          </pre>
+        </div>
+      )}
     </main>
   );
 }
