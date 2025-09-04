@@ -170,7 +170,7 @@ html, body {
 /* Search bar: centered, 800×80, outlined */
 .search{
   position: fixed;
-  top: 390px;             /* top of box */
+  top: 400px;             /* top of box */
   left: 50%;
   transform: translateX(-50%);
   width: 350px;
