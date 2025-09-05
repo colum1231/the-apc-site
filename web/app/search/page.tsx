@@ -1,34 +1,32 @@
 // app/search/page.tsx
 import Link from "next/link";
+import React from "react";
 
-// ------- server settings -------
+/* ------- server settings ------- */
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
+/* ------- helpers ------- */
+function cx(...a: Array<string | false | undefined>) {
+  return a.filter(Boolean).join(" ");
+}
 function getBaseUrl() {
   if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   return "http://localhost:3000";
 }
 
-// ------- helpers -------
-/* eslint-disable @next/next/no-img-element */
-import React from "react";
-function cx(...a: Array<string | false | undefined>) {
-  return a.filter(Boolean).join(" ");
-}
-
-// ----------------- CLIENT: Members (left) -----------------
+/* ================== CLIENT: Members (left) ================== */
 function MembersPaneClient({
   initialItems,
   q,
 }: {
-    initialItems: any[];
-    q: string;
+  initialItems: any[];
+  q: string;
 }) {
   "use client";
-  const [visible, setVisible] = React.useState(4); // show 4 on load
+  const [visible, setVisible] = React.useState(4);
   const [expanded, setExpanded] = React.useState(false);
   const listRef = React.useRef<HTMLDivElement>(null);
   const [scrolled, setScrolled] = React.useState(false);
@@ -42,12 +40,11 @@ function MembersPaneClient({
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
-  const items = initialItems ?? [];
+  const items = Array.isArray(initialItems) ? initialItems : [];
   const shown = items.slice(0, visible);
 
   return (
     <div className="results-left">
-      {/* search box – same proportions as home */}
       <form action="/search" method="get" className="results-search" role="search">
         <input
           name="q"
@@ -57,17 +54,17 @@ function MembersPaneClient({
         />
       </form>
 
-      {/* REAL members box (single corner outline only) */}
       <section
-        className={cx(
-          "members-box",
-          expanded && "members-box--expanded"
-        )}
+        className={cx("members-box", expanded && "members-box--expanded")}
         aria-label="Members"
       >
         <div
           ref={listRef}
-          className={cx("members-scroll", expanded && "members-scroll--scroll", scrolled && "members-scroll--topfade")}
+          className={cx(
+            "members-scroll",
+            expanded && "members-scroll--scroll",
+            scrolled && "members-scroll--topfade"
+          )}
         >
           <ul className="members-list">
             {shown.map((m, i) => {
@@ -88,7 +85,6 @@ function MembersPaneClient({
           </ul>
         </div>
 
-        {/* Load more */}
         {items.length > shown.length && (
           <div className="load-more-row">
             <button
@@ -108,7 +104,7 @@ function MembersPaneClient({
   );
 }
 
-// ----------------- CLIENT: Right categories -----------------
+/* ================== CLIENT: Right categories ================== */
 function RightSectionClient({
   label,
   items,
@@ -119,16 +115,15 @@ function RightSectionClient({
   href: string;
 }) {
   "use client";
-  const [open, setOpen] = React.useState(false); // closed by default
-  const [visible, setVisible] = React.useState(1); // preview one
-  const hasMore = items.length > visible;
+  const [open, setOpen] = React.useState(false);
+  const [visible, setVisible] = React.useState(1);
+  const hasMore = (items?.length ?? 0) > visible;
 
   return (
     <details className={cx("right-acc", open && "right-acc--open")} open={open}>
       <summary
         className="right-head"
         onClick={(e) => {
-          // allow native toggle but track state for class switches
           e.preventDefault();
           setOpen((o) => !o);
         }}
@@ -141,25 +136,25 @@ function RightSectionClient({
       {open && (
         <div className={cx("right-body", visible > 3 && "right-body--scroll")}>
           <ul className="right-list">
-            {items.slice(0, visible).map((it, i) => {
+            {(items ?? []).slice(0, visible).map((it, i) => {
               const title =
                 it?.title ||
                 it?.name ||
                 (label.toUpperCase() === "CALL LIBRARY" ? "Transcript" : "Result");
               const url = it?.url || href || "#";
               const sub =
-                it?.quote ||
-                it?.summary ||
-                it?.description ||
-                it?.context ||
-                "";
+                it?.quote || it?.summary || it?.description || it?.context || "";
               return (
                 <li key={`${label}-${i}`} className="right-card">
-                  <a href={url} target="_blank" rel="noopener noreferrer" className="right-card-title">
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="right-card-title"
+                  >
                     {title}
                   </a>
                   {!!sub && <div className="right-card-sub">“{sub}”</div>}
-                  {/* 85% transparent separator below lines (non-members) */}
                   <div className="asset-sep" />
                 </li>
               );
@@ -183,7 +178,81 @@ function RightSectionClient({
   );
 }
 
-// ----------------- SERVER PAGE -----------------
+/* ================== SERVER: safe fetch & normalize ================== */
+async function safeFetchSections(q: string) {
+  const sections = {
+    members: [] as any[],
+    transcripts: [] as any[],
+    resources: [] as any[],
+    partnerships: [] as any[],
+    events: [] as any[],
+  };
+
+  try {
+    const url = `${getBaseUrl()}/api/ask?q=${encodeURIComponent(q)}`;
+    const res = await fetch(url, { cache: "no-store" });
+
+    if (!res) return sections;
+
+    const ct = res.headers.get("content-type") || "";
+    if (!ct.includes("application/json")) {
+      // non-JSON reply: don’t parse, just bail to empty sections
+      return sections;
+    }
+
+    const data = await res.json().catch(() => null);
+    if (!data) return sections;
+
+    // Common shapes we’ve seen
+    const maybe = data?.data ?? data;
+
+    const tryParseBlock = (s: string) => {
+      const m = s?.match?.(/```json\s*([\s\S]*?)\s*```/i);
+      if (!m) return null;
+      try {
+        return JSON.parse(m[1]);
+      } catch {
+        return null;
+      }
+    };
+
+    if (
+      maybe?.transcripts ||
+      maybe?.resources ||
+      maybe?.partnerships ||
+      maybe?.events ||
+      maybe?.community_chats
+    ) {
+      return {
+        members: maybe?.community_chats ?? [],
+        transcripts: maybe?.transcripts?.items ?? maybe?.transcripts ?? [],
+        resources: maybe?.resources?.items ?? maybe?.resources ?? [],
+        partnerships: maybe?.partnerships?.items ?? maybe?.partnerships ?? [],
+        events: maybe?.events?.items ?? maybe?.events ?? [],
+      };
+    }
+
+    if (typeof maybe?.openai_response === "string") {
+      const parsed = tryParseBlock(maybe.openai_response);
+      if (parsed) {
+        return {
+          members: parsed?.community_chats?.items ?? [],
+          transcripts: parsed?.transcripts?.items ?? [],
+          resources: parsed?.resources?.items ?? [],
+          partnerships: parsed?.partnerships?.items ?? [],
+          events: parsed?.events?.items ?? [],
+        };
+      }
+    }
+
+    return sections;
+  } catch {
+    // Any throw — return safe empties
+    return sections;
+  }
+}
+
+/* ================== PAGE ================== */
 export default async function SearchPage({
   searchParams,
 }: {
@@ -192,7 +261,6 @@ export default async function SearchPage({
   const raw = searchParams?.q;
   const q = Array.isArray(raw) ? raw[0] : raw ?? "";
 
-  // show simple message if no query
   if (!q) {
     return (
       <main className="results">
@@ -215,71 +283,15 @@ export default async function SearchPage({
     );
   }
 
-  // call API (same-origin)
-  const url = `${getBaseUrl()}/api/ask?q=${encodeURIComponent(q)}`;
-  const res = await fetch(url, { cache: "no-store" }).catch(() => null);
-
-  let data: any = null;
-  if (res) {
-    try {
-      data = await res.json();
-    } catch {
-      try {
-        const txt = await res.text();
-        data = { ok: false as const, status: res.status, body: txt };
-      } catch {
-        data = { ok: false as const, status: 500, body: "Failed to read response" };
-      }
-    }
-  }
-
-  // normalize sections
-  let sections = {
-    members: [] as any[],
-    transcripts: [] as any[],
-    resources: [] as any[],
-    partnerships: [] as any[],
-    events: [] as any[],
-  };
-
-  const maybe = data?.data || data;
-  const tryParseBlock = (s: string) => {
-    const m = s?.match?.(/```json\s*([\s\S]*?)\s*```/i);
-    if (!m) return null;
-    try { return JSON.parse(m[1]); } catch { return null; }
-  };
-
-  if (maybe?.transcripts || maybe?.resources || maybe?.partnerships || maybe?.events || maybe?.community_chats) {
-    sections = {
-      members: maybe?.community_chats ?? [],
-      transcripts: maybe?.transcripts?.items ?? maybe?.transcripts ?? [],
-      resources: maybe?.resources?.items ?? maybe?.resources ?? [],
-      partnerships: maybe?.partnerships?.items ?? maybe?.partnerships ?? [],
-      events: maybe?.events?.items ?? maybe?.events ?? [],
-    };
-  } else if (typeof maybe?.openai_response === "string") {
-    const parsed = tryParseBlock(maybe.openai_response);
-    if (parsed) {
-      sections = {
-        members: parsed?.community_chats?.items ?? [],
-        transcripts: parsed?.transcripts?.items ?? [],
-        resources: parsed?.resources?.items ?? [],
-        partnerships: parsed?.partnerships?.items ?? [],
-        events: parsed?.events?.items ?? [],
-      };
-    }
-  }
-
-  // right column order (closed by default)
-  const rightOrder = (["partnerships", "call library", "resources", "events"] as const);
+  const sections = await safeFetchSections(q);
 
   return (
     <main className="results">
       <div className="results-shell">
-        {/* LEFT (search + members) */}
+        {/* LEFT: search + members */}
         <MembersPaneClient initialItems={sections.members ?? []} q={q} />
 
-        {/* RIGHT (categories closed by default) */}
+        {/* RIGHT: categories (closed by default) */}
         <aside className="results-right">
           <RightSectionClient
             label="PARTNERSHIPS"
