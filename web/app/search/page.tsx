@@ -1,6 +1,6 @@
 // web/app/search/page.tsx
 import Link from "next/link";
-import * as React from "react";
+import MembersScroller from "./MembersScroller";
 
 /* ------- server settings ------- */
 export const dynamic = "force-dynamic";
@@ -27,13 +27,24 @@ function parseSections(data: any): Sections {
   const body = data?.data ?? data ?? {};
   const getFence = (t: unknown) => {
     if (typeof t !== "string") return null;
-    const m = t.match(/```json\s*([\s\S]*?)```/i) ?? t.match(/```\s*([\s\S]*?)```/i);
+    const m =
+      t.match(/```json\s*([\s\S]*?)```/i) ??
+      t.match(/```\s*([\s\S]*?)```/i);
     if (!m) return null;
-    try { return JSON.parse((m[1] || "").trim()); } catch { return null; }
+    try {
+      return JSON.parse((m[1] || "").trim());
+    } catch {
+      return null;
+    }
   };
 
-  // Already structured?
-  if (body?.transcripts || body?.resources || body?.partnerships || body?.events || body?.community_chats) {
+  if (
+    body?.transcripts ||
+    body?.resources ||
+    body?.partnerships ||
+    body?.events ||
+    body?.community_chats
+  ) {
     return {
       members: body?.community_chats?.items ?? body?.community_chats ?? [],
       transcripts: body?.transcripts?.items ?? body?.transcripts ?? [],
@@ -43,7 +54,6 @@ function parseSections(data: any): Sections {
     };
   }
 
-  // Try fenced JSON inside openai_response/message
   const parsed = getFence(body?.openai_response ?? body?.message);
   return {
     members: parsed?.community_chats?.items ?? parsed?.community_chats ?? [],
@@ -54,41 +64,9 @@ function parseSections(data: any): Sections {
   };
 }
 
-/* ---- client-only mini scroller (top-fade when scrolled) ---- */
-function MembersScroller({
-  children,
-  scrollMode,
-}: {
-  children: React.ReactNode;
-  scrollMode: boolean;
-}) {
-  "use client";
-  const ref = React.useRef<HTMLDivElement>(null);
-  const [scrolled, setScrolled] = React.useState(false);
-  React.useEffect(() => {
-    const el = ref.current; if (!el) return;
-    const onScroll = () => setScrolled(el.scrollTop > 0);
-    el.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => el.removeEventListener("scroll", onScroll);
-  }, []);
-  return (
-    <div
-      ref={ref}
-      className={[
-        "members-scroll",
-        scrollMode ? "members-scroll--scroll" : "",
-        scrolled ? "members-scroll--topfade" : "",
-      ].join(" ")}
-    >
-      {children}
-    </div>
-  );
-}
-
 /* ------- page (server) ------- */
 export default async function SearchPage({
-  // IMPORTANT: treat as a plain object (do NOT Promise/await it)
+  // IMPORTANT: plain object (do NOT Promise/await)
   searchParams,
 }: {
   searchParams?: Record<string, string | string[] | undefined>;
@@ -98,9 +76,12 @@ export default async function SearchPage({
 
   /* ===== LEFT: Members ===== */
   const mParam = searchParams?.m;
-  const membersScroll = (Array.isArray(mParam) ? mParam[0] : mParam) === "all";
+  const membersScroll =
+    (Array.isArray(mParam) ? mParam[0] : mParam) === "all";
   const MEMBERS_INITIAL = 4;
-  const membersToShow = membersScroll ? Number.MAX_SAFE_INTEGER : MEMBERS_INITIAL;
+  const membersToShow = membersScroll
+    ? Number.MAX_SAFE_INTEGER
+    : MEMBERS_INITIAL;
 
   /* ===== RIGHT: per-category counts (+3 per click) ===== */
   const numFrom = (k: string, def: number) => {
@@ -110,32 +91,44 @@ export default async function SearchPage({
     return Number.isFinite(n) && n > 0 ? n : def;
   };
   const nPartnerships = numFrom("np", 1);
-  const nTranscripts  = numFrom("nt", 1);
-  const nResources    = numFrom("nr", 1);
-  const nEvents       = numFrom("ne", 1);
+  const nTranscripts = numFrom("nt", 1);
+  const nResources = numFrom("nr", 1);
+  const nEvents = numFrom("ne", 1);
 
   const scrollMode = {
     partnerships: nPartnerships >= 4,
-    transcripts:  nTranscripts  >= 4,
-    resources:    nResources    >= 4,
-    events:       nEvents       >= 4,
+    transcripts: nTranscripts >= 4,
+    resources: nResources >= 4,
+    events: nEvents >= 4,
   };
 
   // fetch (same-origin)
   let json: RawAPI | null = null;
   if (q) {
     try {
-      const res = await fetch(`/api/ask?q=${encodeURIComponent(q)}`, { cache: "no-store" });
-      try { json = (await res.json()) as RawAPI; }
-      catch { json = { ok:false, status:res.status, body:await res.text() } as any; }
+      const res = await fetch(
+        `/api/ask?q=${encodeURIComponent(q)}`,
+        { cache: "no-store" }
+      );
+      try {
+        json = (await res.json()) as RawAPI;
+      } catch {
+        json = {
+          ok: false,
+          status: res.status,
+          body: await res.text(),
+        } as any;
+      }
     } catch {
-      json = { ok:false, error:"fetch failed" } as any;
+      json = { ok: false, error: "fetch failed" } as any;
     }
   }
-  const sections = json ? parseSections(json) : { members: [], transcripts: [], resources: [], partnerships: [], events: [] };
+  const sections = json
+    ? parseSections(json)
+    : { members: [], transcripts: [], resources: [], partnerships: [], events: [] };
 
   // +3 URLs (preserve all counts + q)
-  const withParam = (key: "np"|"nt"|"nr"|"ne", val: number) => {
+  const withParam = (key: "np" | "nt" | "nr" | "ne", val: number) => {
     const sp = new URLSearchParams();
     sp.set("q", q);
     sp.set("np", String(nPartnerships));
@@ -147,29 +140,37 @@ export default async function SearchPage({
   };
   const moreHref = {
     partnerships: withParam("np", nPartnerships + 3),
-    transcripts:  withParam("nt", nTranscripts + 3),
-    resources:    withParam("nr", nResources + 3),
-    events:       withParam("ne", nEvents + 3),
+    transcripts: withParam("nt", nTranscripts + 3),
+    resources: withParam("nr", nResources + 3),
+    events: withParam("ne", nEvents + 3),
   };
 
-  const moreMembersHref = `/search?${new URLSearchParams({ q, m: "all" }).toString()}#members`;
+  const moreMembersHref = `/search?${new URLSearchParams({
+    q,
+    m: "all",
+  }).toString()}#members`;
 
-  /* Safe placeholders if any category is empty */
+  // Safe placeholders if any category is empty
   const ensureNonEmpty = (arr: any[], placeholderTitle: string) =>
-    (arr && arr.length > 0)
+    arr && arr.length > 0
       ? arr
       : [{ title: placeholderTitle, description: "No results found." }];
 
   return (
     <main className="results">
-      {/* landing background underlay (no dark overlay on results) */}
+      {/* landing background (no overlay on results) */}
       <div className="landing-wrap" aria-hidden="true" />
 
       <div className="results-shell">
         {/* LEFT half */}
         <section className="results-left">
           {/* Prompt (home style) */}
-          <form action="/search" method="get" className="results-search" role="search">
+          <form
+            action="/search"
+            method="get"
+            className="results-search"
+            role="search"
+          >
             <input
               name="q"
               defaultValue={q}
@@ -180,7 +181,13 @@ export default async function SearchPage({
           </form>
 
           {/* Members box */}
-          <div id="members" className={["members-box", membersScroll ? "members-box--expanded" : ""].join(" ")}>
+          <div
+            id="members"
+            className={[
+              "members-box",
+              membersScroll ? "members-box--expanded" : "",
+            ].join(" ")}
+          >
             {/* corner ticks motif */}
             <div className="members-title-row" aria-hidden="true">
               <span className="corner left" />
@@ -189,27 +196,49 @@ export default async function SearchPage({
 
             <MembersScroller scrollMode={membersScroll}>
               <ul className="members-list">
-                {(sections.members ?? []).slice(0, membersToShow).map((m, i) => {
-                  const name = m?.title || m?.name || m?.display_name || "Member";
-                  const industry = m?.industry || m?.role || m?.expertise || "";
-                  const quote = m?.quote || m?.line || m?.excerpt || m?.description;
-                  return (
-                    <li key={`member-${i}`} className="member-card member-card--clean">
-                      <div className="member-head">
-                        <span className="member-name member-name--bold">{name}</span>
-                        {industry && (<><span className="sep">|</span><span className="member-meta member-meta--bold">{String(industry)}</span></>)}
-                      </div>
-                      {quote && <div className="member-quote">“{quote}”</div>}
-                    </li>
-                  );
-                })}
+                {(sections.members ?? [])
+                  .slice(0, membersToShow)
+                  .map((m, i) => {
+                    const name =
+                      m?.title || m?.name || m?.display_name || "Member";
+                    const industry =
+                      m?.industry || m?.role || m?.expertise || "";
+                    const quote =
+                      m?.quote || m?.line || m?.excerpt || m?.description;
+                    return (
+                      <li
+                        key={`member-${i}`}
+                        className="member-card member-card--clean"
+                      >
+                        <div className="member-head">
+                          <span className="member-name member-name--bold">
+                            {name}
+                          </span>
+                          {industry && (
+                            <>
+                              <span className="sep">|</span>
+                              <span className="member-meta member-meta--bold">
+                                {String(industry)}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        {quote && (
+                          <div className="member-quote">“{quote}”</div>
+                        )}
+                      </li>
+                    );
+                  })}
               </ul>
             </MembersScroller>
 
-            {/* Load more for members */}
-            {!membersScroll && (sections.members?.length ?? 0) > MEMBERS_INITIAL ? (
+            {/* Load more (before scroll mode) */}
+            {!membersScroll &&
+            (sections.members?.length ?? 0) > MEMBERS_INITIAL ? (
               <div className="load-more-row">
-                <Link href={moreMembersHref} className="load-more-btn">LOAD MORE</Link>
+                <Link href={moreMembersHref} className="load-more-btn">
+                  LOAD MORE
+                </Link>
               </div>
             ) : null}
           </div>
@@ -279,10 +308,16 @@ function RightSection({
   const hasMore = all.length > shown.length;
 
   return (
-    <details className={["right-acc", scroll ? "right-acc--scroll" : ""].join(" ")} open={open} id={id}>
+    <details
+      className={["right-acc", scroll ? "right-acc--scroll" : ""].join(" ")}
+      open={open}
+      id={id}
+    >
       <summary className="right-head">
         <span className="right-title">{label}</span>
-        <span className="right-arrow" aria-hidden>▾</span>
+        <span className="right-arrow" aria-hidden>
+          ▾
+        </span>
       </summary>
 
       <div className={["right-body", scroll ? "right-body--scroll" : ""].join(" ")}>
@@ -296,7 +331,9 @@ function RightSection({
 
         {hasMore && (
           <div className="right-load-more-row">
-            <Link href={moreHref} className="right-load-more">Load more</Link>
+            <Link href={moreHref} className="right-load-more">
+              Load more
+            </Link>
           </div>
         )}
       </div>
@@ -306,18 +343,32 @@ function RightSection({
 
 function RightCard({ item }: { item: any }) {
   const title = item?.title || item?.name || item?.display_name || "Untitled";
-  const sub = item?.quote || item?.summary || item?.description || item?.context || "";
+  const sub =
+    item?.quote || item?.summary || item?.description || item?.context || "";
   const url = item?.url;
 
   return (
     <div className="right-card-inner">
       {url ? (
-        <a href={url} target="_blank" rel="noreferrer" className="right-card-title">{title}</a>
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="right-card-title"
+        >
+          {title}
+        </a>
       ) : (
         <div className="right-card-title">{title}</div>
       )}
       <div className="asset-sep" />
-      {sub ? <div className="right-card-sub">“{sub}”</div> : <div className="right-card-sub right-card-sub--empty">“No results found.”</div>}
+      {sub ? (
+        <div className="right-card-sub">“{sub}”</div>
+      ) : (
+        <div className="right-card-sub right-card-sub--empty">
+          “No results found.”
+        </div>
+      )}
       <div className="asset-sep" />
     </div>
   );
