@@ -23,45 +23,45 @@ type Sections = {
   events: any[];
 };
 
+/** Try many shapes the API might return, plus fenced ```json blocks. */
 function parseSections(data: any): Sections {
   const body = data?.data ?? data ?? {};
-  const getFence = (t: unknown) => {
+
+  const fence = (t: unknown) => {
     if (typeof t !== "string") return null;
-    const m =
-      t.match(/```json\s*([\s\S]*?)```/i) ??
-      t.match(/```\s*([\s\S]*?)```/i);
+    const m = t.match(/```json\s*([\s\S]*?)```/i) ?? t.match(/```\s*([\s\S]*?)```/i);
     if (!m) return null;
-    try {
-      return JSON.parse((m[1] || "").trim());
-    } catch {
-      return null;
-    }
+    try { return JSON.parse((m[1] || "").trim()); } catch { return null; }
   };
 
+  const from = (src: any) => ({
+    members:
+      src?.community_chats?.items ?? src?.community_chats ??
+      src?.members?.items ?? src?.members ??
+      src?.community ?? [],
+    transcripts:
+      src?.transcripts?.items ?? src?.transcripts ??
+      src?.calls?.items ?? src?.calls ?? [],
+    resources: src?.resources?.items ?? src?.resources ?? [],
+    partnerships: src?.partnerships?.items ?? src?.partnerships ?? [],
+    events: src?.events?.items ?? src?.events ?? [],
+  });
+
+  // already structured?
   if (
-    body?.transcripts ||
-    body?.resources ||
-    body?.partnerships ||
-    body?.events ||
-    body?.community_chats
+    body?.community_chats || body?.members || body?.community ||
+    body?.transcripts || body?.calls ||
+    body?.resources || body?.partnerships || body?.events
   ) {
-    return {
-      members: body?.community_chats?.items ?? body?.community_chats ?? [],
-      transcripts: body?.transcripts?.items ?? body?.transcripts ?? [],
-      resources: body?.resources?.items ?? body?.resources ?? [],
-      partnerships: body?.partnerships?.items ?? body?.partnerships ?? [],
-      events: body?.events?.items ?? body?.events ?? [],
-    };
+    return from(body);
   }
 
-  const parsed = getFence(body?.openai_response ?? body?.message);
-  return {
-    members: parsed?.community_chats?.items ?? parsed?.community_chats ?? [],
-    transcripts: parsed?.transcripts?.items ?? parsed?.transcripts ?? [],
-    resources: parsed?.resources?.items ?? parsed?.resources ?? [],
-    partnerships: parsed?.partnerships?.items ?? parsed?.partnerships ?? [],
-    events: parsed?.events?.items ?? parsed?.events ?? [],
-  };
+  // fenced JSON?
+  const parsed = fence(body?.openai_response ?? body?.message);
+  if (parsed) return from(parsed);
+
+  // default empty
+  return { members: [], transcripts: [], resources: [], partnerships: [], events: [] };
 }
 
 /* ------- page (server) ------- */
@@ -71,106 +71,94 @@ export default async function SearchPage({
 }: {
   searchParams?: Record<string, string | string[] | undefined>;
 }) {
-  const rawQ = searchParams?.q;
+  const sp = searchParams ?? {};
+  const rawQ = sp.q;
   const q = Array.isArray(rawQ) ? rawQ[0] : rawQ ?? "";
 
+  const debugFlag = (() => {
+    const d = sp.debug;
+    const s = Array.isArray(d) ? d[0] : d;
+    return s === "1" || s === "true";
+  })();
+
   /* ===== LEFT: Members ===== */
-  const mParam = searchParams?.m;
-  const membersScroll =
-    (Array.isArray(mParam) ? mParam[0] : mParam) === "all";
+  const mParam = sp.m;
+  const membersScroll = (Array.isArray(mParam) ? mParam[0] : mParam) === "all";
   const MEMBERS_INITIAL = 4;
-  const membersToShow = membersScroll
-    ? Number.MAX_SAFE_INTEGER
-    : MEMBERS_INITIAL;
+  const membersToShow = membersScroll ? Number.MAX_SAFE_INTEGER : MEMBERS_INITIAL;
 
   /* ===== RIGHT: per-category counts (+3 per click) ===== */
   const numFrom = (k: string, def: number) => {
-    const v = searchParams?.[k];
+    const v = sp[k];
     const s = Array.isArray(v) ? v[0] : v;
     const n = Number(s);
     return Number.isFinite(n) && n > 0 ? n : def;
   };
   const nPartnerships = numFrom("np", 1);
-  const nTranscripts = numFrom("nt", 1);
-  const nResources = numFrom("nr", 1);
-  const nEvents = numFrom("ne", 1);
+  const nTranscripts  = numFrom("nt", 1);
+  const nResources    = numFrom("nr", 1);
+  const nEvents       = numFrom("ne", 1);
 
   const scrollMode = {
     partnerships: nPartnerships >= 4,
-    transcripts: nTranscripts >= 4,
-    resources: nResources >= 4,
-    events: nEvents >= 4,
+    transcripts:  nTranscripts  >= 4,
+    resources:    nResources    >= 4,
+    events:       nEvents       >= 4,
   };
 
   // fetch (same-origin)
+  let resStatus = 0;
+  let resText: string | null = null;
   let json: RawAPI | null = null;
+
   if (q) {
     try {
-      const res = await fetch(
-        `/api/ask?q=${encodeURIComponent(q)}`,
-        { cache: "no-store" }
-      );
+      const res = await fetch(`/api/ask?q=${encodeURIComponent(q)}`, { cache: "no-store" });
+      resStatus = res.status;
       try {
         json = (await res.json()) as RawAPI;
       } catch {
-        json = {
-          ok: false,
-          status: res.status,
-          body: await res.text(),
-        } as any;
+        resText = await res.text();
+        json = { ok: false, status: resStatus, body: resText } as any;
       }
-    } catch {
-      json = { ok: false, error: "fetch failed" } as any;
+    } catch (err: any) {
+      resText = String(err?.message || err || "fetch failed");
+      json = { ok: false, error: resText } as any;
     }
   }
-  const sections = json
-    ? parseSections(json)
-    : { members: [], transcripts: [], resources: [], partnerships: [], events: [] };
+
+  const sections = json ? parseSections(json) : { members: [], transcripts: [], resources: [], partnerships: [], events: [] };
 
   // +3 URLs (preserve all counts + q)
-  const withParam = (key: "np" | "nt" | "nr" | "ne", val: number) => {
-    const sp = new URLSearchParams();
-    sp.set("q", q);
-    sp.set("np", String(nPartnerships));
-    sp.set("nt", String(nTranscripts));
-    sp.set("nr", String(nResources));
-    sp.set("ne", String(nEvents));
-    sp.set(key, String(val));
-    return `/search?${sp.toString()}#${key}`;
+  const withParam = (key: "np"|"nt"|"nr"|"ne", val: number) => {
+    const p = new URLSearchParams();
+    p.set("q", q);
+    p.set("np", String(nPartnerships));
+    p.set("nt", String(nTranscripts));
+    p.set("nr", String(nResources));
+    p.set("ne", String(nEvents));
+    p.set(key, String(val));
+    if (debugFlag) p.set("debug", "1"); // keep debug on
+    return `/search?${p.toString()}#${key}`;
   };
   const moreHref = {
     partnerships: withParam("np", nPartnerships + 3),
-    transcripts: withParam("nt", nTranscripts + 3),
-    resources: withParam("nr", nResources + 3),
-    events: withParam("ne", nEvents + 3),
+    transcripts:  withParam("nt", nTranscripts + 3),
+    resources:    withParam("nr", nResources + 3),
+    events:       withParam("ne", nEvents + 3),
   };
-
-  const moreMembersHref = `/search?${new URLSearchParams({
-    q,
-    m: "all",
-  }).toString()}#members`;
-
-  // Safe placeholders if any category is empty
-  const ensureNonEmpty = (arr: any[], placeholderTitle: string) =>
-    arr && arr.length > 0
-      ? arr
-      : [{ title: placeholderTitle, description: "No results found." }];
+  const moreMembersHref = `/search?${new URLSearchParams({ q, m: "all", ...(debugFlag ? { debug: "1" } : {}) }).toString()}#members`;
 
   return (
     <main className="results">
-      {/* landing background (no overlay on results) */}
+      {/* landing background underlay (no dark overlay on results) */}
       <div className="landing-wrap" aria-hidden="true" />
 
       <div className="results-shell">
         {/* LEFT half */}
         <section className="results-left">
           {/* Prompt (home style) */}
-          <form
-            action="/search"
-            method="get"
-            className="results-search"
-            role="search"
-          >
+          <form action="/search" method="get" className="results-search" role="search">
             <input
               name="q"
               defaultValue={q}
@@ -178,16 +166,11 @@ export default async function SearchPage({
               className="results-input results-input--home"
               autoFocus
             />
+            {debugFlag && <input type="hidden" name="debug" value="1" />}
           </form>
 
           {/* Members box */}
-          <div
-            id="members"
-            className={[
-              "members-box",
-              membersScroll ? "members-box--expanded" : "",
-            ].join(" ")}
-          >
+          <div id="members" className={["members-box", membersScroll ? "members-box--expanded" : ""].join(" ")}>
             {/* corner ticks motif */}
             <div className="members-title-row" aria-hidden="true">
               <span className="corner left" />
@@ -196,60 +179,46 @@ export default async function SearchPage({
 
             <MembersScroller scrollMode={membersScroll}>
               <ul className="members-list">
-                {(sections.members ?? [])
-                  .slice(0, membersToShow)
-                  .map((m, i) => {
-                    const name =
-                      m?.title || m?.name || m?.display_name || "Member";
-                    const industry =
-                      m?.industry || m?.role || m?.expertise || "";
-                    const quote =
-                      m?.quote || m?.line || m?.excerpt || m?.description;
-                    return (
-                      <li
-                        key={`member-${i}`}
-                        className="member-card member-card--clean"
-                      >
-                        <div className="member-head">
-                          <span className="member-name member-name--bold">
-                            {name}
-                          </span>
-                          {industry && (
-                            <>
-                              <span className="sep">|</span>
-                              <span className="member-meta member-meta--bold">
-                                {String(industry)}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                        {quote && (
-                          <div className="member-quote">“{quote}”</div>
-                        )}
-                      </li>
-                    );
-                  })}
+                {(sections.members ?? []).slice(0, membersToShow).map((m, i) => {
+                  const name = m?.title || m?.name || m?.display_name || "Member";
+                  const industry = m?.industry || m?.role || m?.expertise || "";
+                  const quote = m?.quote || m?.line || m?.excerpt || m?.description || m?.context;
+                  return (
+                    <li key={`member-${i}`} className="member-card member-card--clean">
+                      <div className="member-head">
+                        <span className="member-name member-name--bold">{name}</span>
+                        {industry && (<><span className="sep">|</span><span className="member-meta member-meta--bold">{String(industry)}</span></>)}
+                      </div>
+                      {quote && <div className="member-quote">“{quote}”</div>}
+                    </li>
+                  );
+                })}
               </ul>
             </MembersScroller>
 
-            {/* Load more (before scroll mode) */}
-            {!membersScroll &&
-            (sections.members?.length ?? 0) > MEMBERS_INITIAL ? (
+            {/* Load more (visible when there are additional members) */}
+            {!membersScroll && (sections.members?.length ?? 0) > MEMBERS_INITIAL ? (
               <div className="load-more-row">
-                <Link href={moreMembersHref} className="load-more-btn">
-                  LOAD MORE
-                </Link>
+                <Link href={moreMembersHref} className="load-more-btn">LOAD MORE</Link>
               </div>
             ) : null}
           </div>
+
+          {/* Optional inline debug */}
+          {debugFlag && (
+            <div style={{marginTop:20, fontSize:12, opacity:.75}}>
+              <div>DEBUG: status={resStatus}</div>
+              <div>members={sections.members?.length ?? 0}, partnerships={sections.partnerships?.length ?? 0}, transcripts={sections.transcripts?.length ?? 0}, resources={sections.resources?.length ?? 0}, events={sections.events?.length ?? 0}</div>
+            </div>
+          )}
         </section>
 
-        {/* RIGHT half */}
+        {/* RIGHT half (open preview; Load more → scroll) */}
         <aside className="results-right">
           <RightSection
             id="np"
             label="PARTNERSHIPS"
-            items={ensureNonEmpty(sections.partnerships ?? [], "Partnerships")}
+            items={sections.partnerships ?? []}
             count={nPartnerships}
             scroll={scrollMode.partnerships}
             moreHref={moreHref.partnerships}
@@ -257,7 +226,7 @@ export default async function SearchPage({
           <RightSection
             id="nt"
             label="CALL LIBRARY"
-            items={ensureNonEmpty(sections.transcripts ?? [], "Call Library")}
+            items={sections.transcripts ?? []}
             count={nTranscripts}
             scroll={scrollMode.transcripts}
             moreHref={moreHref.transcripts}
@@ -265,7 +234,7 @@ export default async function SearchPage({
           <RightSection
             id="nr"
             label="RESOURCES"
-            items={ensureNonEmpty(sections.resources ?? [], "Resources")}
+            items={sections.resources ?? []}
             count={nResources}
             scroll={scrollMode.resources}
             moreHref={moreHref.resources}
@@ -273,13 +242,20 @@ export default async function SearchPage({
           <RightSection
             id="ne"
             label="EVENTS"
-            items={ensureNonEmpty(sections.events ?? [], "Events")}
+            items={sections.events ?? []}
             count={nEvents}
             scroll={scrollMode.events}
             moreHref={moreHref.events}
           />
 
           <div className="other-footer">OTHER</div>
+
+          {/* page-level debug dump on the right (toggle with &debug=1) */}
+          {debugFlag && (
+            <pre style={{marginTop:20, maxHeight:240, overflow:'auto', fontSize:11, lineHeight:1.2, opacity:.75}}>
+{JSON.stringify(json, null, 2)}
+            </pre>
+          )}
         </aside>
       </div>
     </main>
@@ -303,21 +279,15 @@ function RightSection({
   moreHref: string;
 }) {
   const all = items ?? [];
-  const open = true; // auto-open to show preview
+  const open = true; // open by default to show preview
   const shown = all.slice(0, Math.max(1, count));
   const hasMore = all.length > shown.length;
 
   return (
-    <details
-      className={["right-acc", scroll ? "right-acc--scroll" : ""].join(" ")}
-      open={open}
-      id={id}
-    >
+    <details className={["right-acc", scroll ? "right-acc--scroll" : ""].join(" ")} open={open} id={id}>
       <summary className="right-head">
         <span className="right-title">{label}</span>
-        <span className="right-arrow" aria-hidden>
-          ▾
-        </span>
+        <span className="right-arrow" aria-hidden>▾</span>
       </summary>
 
       <div className={["right-body", scroll ? "right-body--scroll" : ""].join(" ")}>
@@ -331,9 +301,7 @@ function RightSection({
 
         {hasMore && (
           <div className="right-load-more-row">
-            <Link href={moreHref} className="right-load-more">
-              Load more
-            </Link>
+            <Link href={moreHref} className="right-load-more">Load more</Link>
           </div>
         )}
       </div>
@@ -343,33 +311,17 @@ function RightSection({
 
 function RightCard({ item }: { item: any }) {
   const title = item?.title || item?.name || item?.display_name || "Untitled";
-  const sub =
-    item?.quote || item?.summary || item?.description || item?.context || "";
+  const sub = item?.quote || item?.summary || item?.description || item?.context || "";
   const url = item?.url;
 
   return (
     <div className="right-card-inner">
       {url ? (
-        <a
-          href={url}
-          target="_blank"
-          rel="noreferrer"
-          className="right-card-title"
-        >
-          {title}
-        </a>
+        <a href={url} target="_blank" rel="noreferrer" className="right-card-title">{title}</a>
       ) : (
         <div className="right-card-title">{title}</div>
       )}
-      <div className="asset-sep" />
-      {sub ? (
-        <div className="right-card-sub">“{sub}”</div>
-      ) : (
-        <div className="right-card-sub right-card-sub--empty">
-          “No results found.”
-        </div>
-      )}
-      <div className="asset-sep" />
+      {sub ? <div className="right-card-sub">“{sub}”</div> : null}
     </div>
   );
 }
