@@ -1,292 +1,318 @@
-// web/app/search/page.tsx
+// app/search/page.tsx
 import Link from "next/link";
 
+// ------- server settings -------
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
-export default function SearchPage({
-  searchParams,
+function getBaseUrl() {
+  if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "http://localhost:3000";
+}
+
+/* eslint-disable @next/next/no-img-element */
+import React from "react";
+function cx(...a: Array<string | false | undefined>) {
+  return a.filter(Boolean).join(" ");
+}
+
+/* ===========================
+   MEMBERS (client) 
+   - 4 shown by default
+   - clicking LOAD MORE switches to scroll mode (+3 each click)
+   - when scroll mode is active, wrapper gets .members-box--scroll to flip bottom corners to grey
+=========================== */
+function MembersPaneClient({
+  initialItems,
+  q,
 }: {
-  searchParams?: Record<string, string | string[] | undefined>;
+  initialItems: any[];
+  q: string;
 }) {
-  const sp = searchParams ?? {};
-  const get = (k: string) => {
-    const v = (sp as any)[k];
-    return Array.isArray(v) ? v[0] : v;
+  "use client";
+
+  const INITIAL = 4;
+  const [visible, setVisible] = React.useState(INITIAL);
+  const [scrollMode, setScrollMode] = React.useState(false);
+  const listRef = React.useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled] = React.useState(false);
+
+  React.useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const onScroll = () => setScrolled(el.scrollTop > 2);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const items = initialItems ?? [];
+  const shown = items.slice(0, visible);
+
+  const onMore = () => {
+    if (!scrollMode) setScrollMode(true); // flips bottom corners grey via CSS (.members-box--scroll)
+    setVisible((v) => v + 3);
   };
 
-  const q = get("q") ?? "";
-  const m = get("m");           // members scroll toggle
-  const np = get("np");         // partnerships scroll toggle
-  const nt = get("nt");         // transcripts scroll toggle
-  const nr = get("nr");         // resources scroll toggle
-  const ne = get("ne");         // events scroll toggle
+  return (
+    <div className="results-left">
+      {/* search box – same look/size as landing */}
+      <form action="/search" method="get" className="results-search" role="search">
+        <input
+          name="q"
+          defaultValue={q}
+          placeholder="Your next move...."
+          className="input results-input results-input--home"
+          autoFocus
+        />
+      </form>
 
-  const membersScroll = m === "all";
-  const npScroll = np === "all";
-  const ntScroll = nt === "all";
-  const nrScroll = nr === "all";
-  const neScroll = ne === "all";
+      {/* MEMBERS BOX (centered within left half) */}
+      <section className={cx("members-box", scrollMode && "members-box--scroll")}>
+        {/* tiny corner ticks belong to this header only (global CSS hides all other .corner on results) */}
+        <div className="members-title-row" aria-hidden>
+          <div className="corner" />
+          <div className="corner right" />
+        </div>
+
+        <div
+          ref={listRef}
+          className={cx(
+            "members-scroll",
+            scrollMode && "members-box--scroll members-scroll", // keep same class when scrollMode on
+            scrollMode && "members-scroll", // ensure class remains
+            scrollMode && "members-scroll--scroll", // overflow + fades top/bottom
+            scrollMode && scrolled && "members-scroll--topfade"
+          )}
+          style={scrollMode ? undefined : undefined}
+        >
+          <ul className="members-list">
+            {shown.map((m, i) => {
+              const name = m?.name || m?.title || "Member";
+              const role = m?.role || m?.industry || m?.subtitle || "";
+              const quote = m?.quote || m?.context || "";
+              return (
+                <li key={`m-${i}`} className="member-card member-card--clean">
+                  <div className="member-head">
+                    <span className="member-name">{name}</span>
+                    {role && (
+                      <>
+                        <span className="sep">|</span>
+                        <span className="member-meta">{role}</span>
+                      </>
+                    )}
+                  </div>
+                  {quote && <div className="member-quote">“{quote}”</div>}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        {/* Members "LOAD MORE" (centered). Appears if there are more items than shown. */}
+        {items.length > shown.length && (
+          <div className="load-more-row load-more-row--members">
+            <button
+              className="load-more-btn"
+              type="button"
+              onClick={onMore}
+              aria-label="Load more members"
+            >
+              LOAD MORE
+            </button>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+/* ===========================
+   RIGHT CATEGORY (client)
+   - default CLOSED
+   - when opened: show 1 asset (10px gap, 25px indent via CSS)
+   - clicking "Load more" => visible += 3; once visible >= 4, body becomes scrollable with fades and spacing shrinks (CSS handles .right-acc--scroll)
+=========================== */
+function RightSectionClient({
+  label,
+  items,
+  href,
+}: {
+  label: string;
+  items: any[];
+  href: string;
+}) {
+  "use client";
+
+  const [open, setOpen] = React.useState(false); // CLOSED by default per spec
+  const [visible, setVisible] = React.useState(1); // preview 1 when opened
+  const hasMore = items.length > visible;
+  const scrollMode = visible >= 4; // 1 preview + at least one "load more" click
+
+  const onToggle = () => {
+    setOpen((o) => {
+      // when opening, reset to preview 1
+      if (!o) setVisible(1);
+      return !o;
+    });
+  };
+
+  const onMore = () => setVisible((v) => v + 3);
+
+  return (
+    <details className={cx("right-acc", scrollMode && "right-acc--scroll")} open={open}>
+      <summary className="right-head" onClick={onToggle}>
+        <span className="right-title">{label}</span>
+        <span className="right-arrow">{open ? "▾" : "▸"}</span>
+      </summary>
+
+      {open && (
+        <div className={cx("right-body", scrollMode && "right-body--scroll")}>
+          <ul className="right-list">
+            {items.slice(0, visible).map((it, i) => {
+              const title =
+                it?.title ||
+                it?.name ||
+                (label === "CALL LIBRARY" ? "Call" : "Result");
+              const url = it?.url || href || "#";
+              const sub =
+                it?.quote ||
+                it?.summary ||
+                it?.description ||
+                it?.context ||
+                "";
+              return (
+                <li key={`${label}-${i}`}>
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="right-card-title"
+                  >
+                    {title}
+                  </a>
+                  <div className={cx("right-card-sub", !sub && "right-card-sub--empty")}>
+                    {sub ? `“${sub}”` : " "}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+
+          {hasMore && (
+            <div className="right-load-more-row">
+              <button
+                type="button"
+                className="right-load-more"
+                onClick={onMore}
+                aria-label={`Load more ${label.toLowerCase()}`}
+              >
+                Load more
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </details>
+  );
+}
+
+// ------- server page -------
+export default async function SearchPage({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
+  const raw = searchParams?.q;
+  const q = Array.isArray(raw) ? raw[0] : raw ?? "";
+
+  if (!q) {
+    return (
+      <main className="min-h-screen bg-black text-white p-8">
+        <Link href="/" className="text-neutral-400 hover:text-white">← Back</Link>
+        <h1 className="text-2xl mt-6">Search</h1>
+        <p className="mt-2 text-neutral-400">Type something on the landing page.</p>
+      </main>
+    );
+  }
+
+  // call our API
+  const url = `${getBaseUrl()}/api/ask?q=${encodeURIComponent(q)}`;
+  const res = await fetch(url, { cache: "no-store" });
+
+  let data: any;
+  try {
+    data = await res.json();
+  } catch {
+    data = { ok: false as const, status: res.status, body: await res.text() };
+  }
+
+  // Accept either structured JSON or openai_response with ```json block
+  let sections = {
+    members: [] as any[],
+    transcripts: [] as any[],
+    resources: [] as any[],
+    partnerships: [] as any[],
+    events: [] as any[],
+  };
+
+  const maybe = data?.data || data;
+
+  const tryParseBlock = (s: string) => {
+    const m = s.match(/```json\s*([\s\S]*?)\s*```/i);
+    if (!m) return null;
+    try { return JSON.parse(m[1]); } catch { return null; }
+  };
+
+  if (maybe?.transcripts || maybe?.resources || maybe?.partnerships || maybe?.events || maybe?.community_chats) {
+    sections = {
+      members: maybe?.community_chats ?? [],
+      transcripts: maybe?.transcripts?.items ?? maybe?.transcripts ?? [],
+      resources: maybe?.resources?.items ?? maybe?.resources ?? [],
+      partnerships: maybe?.partnerships?.items ?? maybe?.partnerships ?? [],
+      events: maybe?.events?.items ?? maybe?.events ?? [],
+    };
+  } else if (typeof maybe?.openai_response === "string") {
+    const parsed = tryParseBlock(maybe.openai_response);
+    if (parsed) {
+      sections = {
+        members: parsed?.community_chats?.items ?? [],
+        transcripts: parsed?.transcripts?.items ?? [],
+        resources: parsed?.resources?.items ?? [],
+        partnerships: parsed?.partnerships?.items ?? [],
+        events: parsed?.events?.items ?? [],
+      };
+    }
+  }
+
+  const rightOrder = (["partnerships", "transcripts", "resources", "events"] as const);
 
   return (
     <main className="results">
-      {/* background from landing, behind content */}
-      <div className="landing-wrap" aria-hidden="true" />
-
       <div className="results-shell">
-        {/* ================= LEFT HALF ================= */}
-        <section className="results-left">
-          {/* SEARCH BAR (same look as home) */}
-          <form action="/search" method="get" className="results-search" role="search">
-            <input
-              name="q"
-              defaultValue={q}
-              placeholder="What’s your next move?"
-              className="results-input results-input--home"
-              autoFocus
-            />
-          </form>
+        {/* LEFT (search + members) */}
+        <MembersPaneClient initialItems={sections.members ?? []} q={q} />
 
-          {/* MEMBERS BOX (unchanged from last step) */}
-          <div
-            id="members"
-            className={`members-box ${membersScroll ? "members-box--scroll" : ""}`}
-          >
-            <div className="members-title-row" aria-hidden="true">
-              <span className="corner left" />
-              <span className="corner right" />
-            </div>
-
-            <div className="members-scroll">
-              <ul className="members-list">
-                <li className="member-card member-card--clean">
-                  <div className="member-head">
-                    <span className="member-name member-name--bold">Sample Member</span>
-                    <span className="sep">|</span>
-                    <span className="member-meta member-meta--bold">Recruiting</span>
-                  </div>
-                  <div className="member-quote">“I interviewed 12 candidates and found 2 A-players.”</div>
-                </li>
-                <li className="member-card member-card--clean">
-                  <div className="member-head">
-                    <span className="member-name member-name--bold">Jordan Lee</span>
-                    <span className="sep">|</span>
-                    <span className="member-meta member-meta--bold">Sales Ops</span>
-                  </div>
-                  <div className="member-quote">“Referrals beat cold every time.”</div>
-                </li>
-                <li className="member-card member-card--clean">
-                  <div className="member-head">
-                    <span className="member-name member-name--bold">Maya Chen</span>
-                    <span className="sep">|</span>
-                    <span className="member-meta member-meta--bold">Talent</span>
-                  </div>
-                  <div className="member-quote">“Always screen for coachability.”</div>
-                </li>
-                <li className="member-card member-card--clean">
-                  <div className="member-head">
-                    <span className="member-name member-name--bold">Chris P.</span>
-                    <span className="sep">|</span>
-                    <span className="member-meta member-meta--bold">Hiring</span>
-                  </div>
-                  <div className="member-quote">“Keep the bar high; move fast.”</div>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Members Load more (enables scroll via ?m=all) */}
-          {!membersScroll && (
-            <div className="load-more-row load-more-row--members">
-              <Link
-                href={`/search?${new URLSearchParams({ q: q || "test", m: "all" }).toString()}`}
-                className="load-more-btn"
-              >
-                LOAD MORE
-              </Link>
-            </div>
-          )}
-        </section>
-
-        {/* ================= RIGHT HALF ================= */}
+        {/* RIGHT (categories; CLOSED by default; open to preview first card, then Load more) */}
         <aside className="results-right">
-          {/* PARTNERSHIPS */}
-          <details className={`right-acc ${npScroll ? "right-acc--scroll" : ""}`} id="np">
-            <summary className="right-head">
-              <span className="right-title">PARTNERSHIPS</span>
-              <span className="right-arrow" aria-hidden>▸</span>
-            </summary>
-            <div className={`right-body ${npScroll ? "right-body--scroll" : ""}`}>
-              <ul className="right-list">
-                <li className="right-card">
-                  <div className="right-card-inner">
-                    <div className="right-card-title">NetRevenue</div>
-                    <div className="right-card-sub">“Specializes in recruiting setters for remote sales teams.”</div>
-                  </div>
-                </li>
-                {npScroll && (
-                  <>
-                    <li className="right-card">
-                      <div className="right-card-inner">
-                        <div className="right-card-title">TopCloser</div>
-                        <div className="right-card-sub">“Commission-only setter placement at scale.”</div>
-                      </div>
-                    </li>
-                    <li className="right-card">
-                      <div className="right-card-inner">
-                        <div className="right-card-title">RevForge</div>
-                        <div className="right-card-sub">“On-demand interview pipeline for outbound teams.”</div>
-                      </div>
-                    </li>
-                  </>
-                )}
-              </ul>
-              {!npScroll && (
-                <div className="right-load-more-row">
-                  <Link
-                    href={`/search?${new URLSearchParams({ q: q || "test", np: "all" }).toString()}`}
-                    className="right-load-more"
-                  >
-                    Load more
-                  </Link>
-                </div>
-              )}
-            </div>
-          </details>
-
-          {/* CALL LIBRARY */}
-          <details className={`right-acc ${ntScroll ? "right-acc--scroll" : ""}`} id="nt">
-            <summary className="right-head">
-              <span className="right-title">CALL LIBRARY</span>
-              <span className="right-arrow" aria-hidden>▸</span>
-            </summary>
-            <div className={`right-body ${ntScroll ? "right-body--scroll" : ""}`}>
-              <ul className="right-list">
-                <li className="right-card">
-                  <div className="right-card-inner">
-                    <div className="right-card-title">Evan Carroll APC Masterclass Call</div>
-                    <div className="right-card-sub">“The main bottleneck is actually talent acquisition.”</div>
-                  </div>
-                </li>
-                {ntScroll && (
-                  <>
-                    <li className="right-card">
-                      <div className="right-card-inner">
-                        <div className="right-card-title">Outbound Roundtable</div>
-                        <div className="right-card-sub">“How to systemize referrals for volume.”</div>
-                      </div>
-                    </li>
-                    <li className="right-card">
-                      <div className="right-card-inner">
-                        <div className="right-card-title">Setter Hiring Q&A</div>
-                        <div className="right-card-sub">“Traits we filter for in the first pass.”</div>
-                      </div>
-                    </li>
-                  </>
-                )}
-              </ul>
-              {!ntScroll && (
-                <div className="right-load-more-row">
-                  <Link
-                    href={`/search?${new URLSearchParams({ q: q || "test", nt: "all" }).toString()}`}
-                    className="right-load-more"
-                  >
-                    Load more
-                  </Link>
-                </div>
-              )}
-            </div>
-          </details>
-
-          {/* RESOURCES */}
-          <details className={`right-acc ${nrScroll ? "right-acc--scroll" : ""}`} id="nr">
-            <summary className="right-head">
-              <span className="right-title">RESOURCES</span>
-              <span className="right-arrow" aria-hidden>▸</span>
-            </summary>
-            <div className={`right-body ${nrScroll ? "right-body--scroll" : ""}`}>
-              <ul className="right-list">
-                <li className="right-card">
-                  <div className="right-card-inner">
-                    <div className="right-card-title">Outbound Interview Scorecard</div>
-                    <div className="right-card-sub">“A one-pager to standardize setter interviews.”</div>
-                  </div>
-                </li>
-                {nrScroll && (
-                  <>
-                    <li className="right-card">
-                      <div className="right-card-inner">
-                        <div className="right-card-title">Referral Script Pack</div>
-                        <div className="right-card-sub">“Short templates for warm intros.”</div>
-                      </div>
-                    </li>
-                    <li className="right-card">
-                      <div className="right-card-inner">
-                        <div className="right-card-title">Scorecard Rubric</div>
-                        <div className="right-card-sub">“Calibrate panel feedback quickly.”</div>
-                      </div>
-                    </li>
-                  </>
-                )}
-              </ul>
-              {!nrScroll && (
-                <div className="right-load-more-row">
-                  <Link
-                    href={`/search?${new URLSearchParams({ q: q || "test", nr: "all" }).toString()}`}
-                    className="right-load-more"
-                  >
-                    Load more
-                  </Link>
-                </div>
-              )}
-            </div>
-          </details>
-
-          {/* EVENTS */}
-          <details className={`right-acc ${neScroll ? "right-acc--scroll" : ""}`} id="ne">
-            <summary className="right-head">
-              <span className="right-title">EVENTS</span>
-              <span className="right-arrow" aria-hidden>▸</span>
-            </summary>
-            <div className={`right-body ${neScroll ? "right-body--scroll" : ""}`}>
-              <ul className="right-list">
-                <li className="right-card">
-                  <div className="right-card-inner">
-                    <div className="right-card-title">APC Hiring Roundtable</div>
-                    <div className="right-card-sub">“NYC · Oct 15”</div>
-                  </div>
-                </li>
-                {neScroll && (
-                  <>
-                    <li className="right-card">
-                      <div className="right-card-inner">
-                        <div className="right-card-title">APC Open House</div>
-                        <div className="right-card-sub">“SF · Nov 3”</div>
-                      </div>
-                    </li>
-                    <li className="right-card">
-                      <div className="right-card-inner">
-                        <div className="right-card-title">Setter Sprint</div>
-                        <div className="right-card-sub">“Remote · Dec 2–6”</div>
-                      </div>
-                    </li>
-                  </>
-                )}
-              </ul>
-              {!neScroll && (
-                <div className="right-load-more-row">
-                  <Link
-                    href={`/search?${new URLSearchParams({ q: q || "test", ne: "all" }).toString()}`}
-                    className="right-load-more"
-                  >
-                    Load more
-                  </Link>
-                </div>
-              )}
-            </div>
-          </details>
-
+          {rightOrder.map((k) => (
+            <RightSectionClient
+              key={k}
+              label={
+                k === "transcripts"
+                  ? "CALL LIBRARY"
+                  : k === "resources"
+                  ? "RESOURCES"
+                  : k === "partnerships"
+                  ? "PARTNERSHIPS"
+                  : "EVENTS"
+              }
+              items={(sections as any)[k] ?? []}
+              href={`/${k}`}
+            />
+          ))}
           <div className="other-footer">OTHER</div>
         </aside>
       </div>
