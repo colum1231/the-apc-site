@@ -874,7 +874,7 @@ html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fi
   .results-right{ padding-top:40px; }
 }
 
-/* ===== RESULTS PAGE — hard, scoped overrides (landing unaffected) [v4] ===== */
+/* ===== RESULTS PAGE — hard, scoped overrides (landing unaffected) [v5] ===== */
 .results{
   height:100vh; overflow:hidden; position:relative; color:#8b8989; background:transparent;
 }
@@ -899,11 +899,12 @@ html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fi
 .results-input.results-input--home::placeholder{ color:#545454; opacity:.6; }
 .results-input.results-input--home:focus::placeholder{ opacity:0; }
 
-/* members box (unchanged) */
+/* ===== MEMBERS BOX ===== */
 .members-box{
   position:relative; width:740px; margin:0 auto; padding:60px; border:1px solid transparent;
   height: calc(100vh - 135px - 100px - 110px); box-sizing:border-box;
 }
+/* top corners (grey 75px runs) */
 .members-box::before{
   content:""; position:absolute; inset:0; pointer-events:none;
   background:
@@ -912,12 +913,24 @@ html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fi
     linear-gradient(#545454,#545454) top left  / 1px 75px no-repeat,
     linear-gradient(#545454,#545454) top right / 1px 75px no-repeat;
 }
+/* bottom corners: black (transparent) by default; turn grey only after Load more */
+.members-box::after{
+  content:""; position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .15s ease;
+  background:
+    linear-gradient(#545454,#545454) bottom left  / 75px 1px no-repeat,
+    linear-gradient(#545454,#545454) bottom right / 75px 1px no-repeat,
+    linear-gradient(#545454,#545454) bottom left  / 1px 75px no-repeat,
+    linear-gradient(#545454,#545454) bottom right / 1px 75px no-repeat;
+}
+.members-box--scroll::after{ opacity:1; }  /* becomes grey when scrolling enabled */
+
 .members-title-row{ height:26px; position:relative; margin-bottom:12px; }
 .members-title-row .corner{
   position:absolute; top:0; width:46px; height:26px; opacity:.6;
   border-top:2px solid #545454; border-left:2px solid #545454;
 }
 .members-title-row .corner.right{ right:0; left:auto; border-left:0; border-right:2px solid #545454; }
+
 .members-scroll{
   height:100%; overflow:hidden; padding-right:6px;
   -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) calc(100% - 150px), rgba(0,0,0,0) 100%);
@@ -928,6 +941,7 @@ html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fi
   -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,1) 150px, rgba(0,0,0,1) calc(100% - 150px), rgba(0,0,0,0) 100%);
           mask-image: linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,1) 150px, rgba(0,0,0,1) calc(100% - 150px), rgba(0,0,0,0) 100%);
 }
+
 .members-list{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:18px; }
 .member-card--clean{ border:0; padding:0; }
 .member-head{ display:flex; align-items:baseline; gap:10px; }
@@ -936,6 +950,7 @@ html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fi
 .member-quote{ margin-top:6px; font-style:italic; color:#8b8989; }
 .sep{ opacity:.55; }
 
+/* no stray global corner frames on results */
 .results .corner--left, .results .corner--right{ display:none !important; }
 
 /* load more (members) */
@@ -951,9 +966,9 @@ html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fi
 }
 @keyframes spin{ to{ transform:translate(-50%,-50%) rotate(360deg); } }
 
-/* RIGHT SIDE — default closed; open shows first asset + Load more; Load more => scroll box */
+/* ===== RIGHT SIDE ===== */
 .right-acc{ margin-bottom:125px; border:0; }
-.right-acc--scroll{ margin-bottom:25px; }            /* when a section becomes scrollable */
+.right-acc--scroll{ margin-bottom:25px; }
 .right-head{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 2px; cursor:pointer; }
 .right-title{ font-size:24px; font-weight:800; letter-spacing:.06em; color:#8b8989; }
 .right-arrow{ color:#8b8989; opacity:.85; transition:transform .15s ease; }
@@ -961,11 +976,23 @@ html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fi
 
 .right-body{ padding:10px 2px 0 2px; }
 .right-list{ list-style:none; padding:0; margin:0; padding-left:25px; display:flex; flex-direction:column; gap:20px; }
-.right-card-title{ color:#8b8989; text-decoration:none; }
-.right-card-title:hover{ text-decoration:underline; }
-.right-card-sub{ color:#8b8989; opacity:.9; }
 
-/* scroll mode for a category (approx 3 assets visible) with fades */
+/* asset typography */
+.right-card-title{ color:#8b8989; text-decoration:none; position:relative; display:block; }
+.right-card-title:hover{ text-decoration:underline; }
+.right-card-sub{ color:#8b8989; opacity:.9; position:relative; display:block; }
+
+/* === Non-member separators, 85% grey, 5px below each line === */
+.right-card-title::after{
+  content:""; display:block; height:1px; background:rgba(139,137,137,.85);
+  margin-top:5px;
+}
+.right-card-sub::after{
+  content:""; display:block; height:1px; background:rgba(139,137,137,.85);
+  margin-top:5px;
+}
+
+/* scroll mode for a category (≈3 assets visible) with fades */
 .right-body--scroll{
   max-height:420px;
   overflow:auto;
