@@ -759,3 +759,107 @@ html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fi
     rgba(0,0,0,1) calc(100% - var(--fade)),
     rgba(0,0,0,0) 100%);
 }
+
+/* ===== RESULTS PAGE — hard, scoped overrides (landing unaffected) ===== */
+.results{
+  height:100vh;           /* page never scrolls */
+  overflow:hidden;
+  position:relative;
+  color:#8b8989;
+  background:transparent;
+}
+.results-shell{
+  height:100%;
+  max-width:1920px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:1fr 1fr;   /* TRUE 50/50 halves */
+  gap:0;
+  padding:135px 0 110px;          /* top room for search; bottom safe area */
+  align-items:start;
+}
+/* 110px padding from center & edges for BOTH halves */
+.results-left{  padding:0 110px; }
+.results-right{ padding:0 110px; padding-top:150px; } /* first header 150px from top */
+
+/* Search bar (same look as home, forced visible on results) */
+.results-search{ position:relative; z-index:5; margin:0 0 100px 0; }
+.results-input.results-input--home{
+  width:350px;
+  height:42.5px;
+  border:2px solid #545454;
+  border-radius:999px;
+  background:transparent;
+  color:#373737;
+  text-align:center;
+  font-size:16.5px;
+  padding:0 28px;
+}
+.results-input.results-input--home::placeholder{ color:#545454; opacity:.6; }
+.results-input.results-input--home:focus::placeholder{ opacity:0; }
+
+/* Members box sizing + grey corner runs; black sections are transparent */
+.members-box{
+  position:relative;
+  width:740px;                 /* centered within left half */
+  margin:0 auto;
+  padding:60px;
+  border:1px solid transparent; /* keep sides transparent */
+}
+.members-box::before{
+  content:"";
+  position:absolute; inset:0; pointer-events:none;
+  background:
+    linear-gradient(#545454,#545454) top left  / 75px 1px no-repeat,
+    linear-gradient(#545454,#545454) top right / 75px 1px no-repeat,
+    linear-gradient(#545454,#545454) top left  / 1px 75px no-repeat,
+    linear-gradient(#545454,#545454) top right / 1px 75px no-repeat;
+}
+.members-title-row{ height:26px; position:relative; margin-bottom:12px; }
+.members-title-row .corner{
+  position:absolute; top:0; width:46px; height:26px; opacity:.6;
+  border-top:2px solid #545454; border-left:2px solid #545454;
+}
+.members-title-row .corner.right{
+  right:0; left:auto; border-left:0; border-right:2px solid #545454;
+}
+
+/* Clean member rows (no bullets/dividers) */
+.members-list{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:18px; }
+.member-card--clean{ border:0; padding:0; }
+.member-head{ display:flex; align-items:baseline; gap:10px; }
+.member-name{ font-weight:700; color:#8b8989; }
+.member-meta{ font-weight:700; color:#7a7a7a; }
+.member-quote{ margin-top:6px; font-style:italic; color:#8b8989; }
+.sep{ opacity:.55; }
+
+/* Right column — headers visible, closed by default */
+.right-acc{ margin-bottom:125px; border:0; }
+.right-head{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 2px; cursor:pointer; }
+.right-title{ font-size:24px; font-weight:800; letter-spacing:.06em; color:#8b8989; }
+.right-arrow{ color:#8b8989; opacity:.85; }
+.right-body{ padding:10px 2px 0 2px; display:block; } /* content appears only when <details> is opened */
+.right-list{ list-style:none; padding:0; margin:0; padding-left:25px; display:flex; flex-direction:column; gap:20px; }
+.right-card-title{ color:#8b8989; text-decoration:none; }
+.right-card-title:hover{ text-decoration:underline; }
+.right-card-sub{ color:#8b8989; opacity:.9; }
+
+/* OTHER footer centered with divider 20px above (as reference) */
+.other-footer{
+  margin-top:32px;
+  font-weight:800; letter-spacing:.06em; color:#8b8989; text-align:center; position:relative;
+}
+.other-footer::before{
+  content:""; position:absolute; left:10%; right:10%; height:1px; background:#3a3a3a; top:-20px;
+}
+
+/* Keep landing image behind content */
+.landing-wrap{ z-index:0; }
+.results-shell, .results-left, .results-right{ position:relative; z-index:1; }
+
+/* Safety: stack on really small widths */
+@media (max-width:1200px){
+  .results-shell{ grid-template-columns:1fr; }
+  .results-left, .results-right{ padding:0 24px; }
+  .results-right{ padding-top:40px; }
+}
