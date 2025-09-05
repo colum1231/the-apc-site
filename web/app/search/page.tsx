@@ -1,221 +1,46 @@
-// app/search/page.tsx
-import Link from "next/link";
+"use client";
+
 import React from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 
-/* ------- server settings ------- */
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-export const fetchCache = "force-no-store";
-
-/* ------- helpers ------- */
+/* ---------- small helpers ---------- */
 function cx(...a: Array<string | false | undefined>) {
   return a.filter(Boolean).join(" ");
 }
-function getBaseUrl() {
-  if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return "http://localhost:3000";
-}
+type Sections = {
+  members: any[];
+  transcripts: any[];
+  resources: any[];
+  partnerships: any[];
+  events: any[];
+};
+const EMPTY: Sections = {
+  members: [],
+  transcripts: [],
+  resources: [],
+  partnerships: [],
+  events: [],
+};
 
-/* ================== CLIENT: Members (left) ================== */
-function MembersPaneClient({
-  initialItems,
-  q,
-}: {
-  initialItems: any[];
-  q: string;
-}) {
-  "use client";
-  const [visible, setVisible] = React.useState(4);
-  const [expanded, setExpanded] = React.useState(false);
-  const listRef = React.useRef<HTMLDivElement>(null);
-  const [scrolled, setScrolled] = React.useState(false);
-
-  React.useEffect(() => {
-    const el = listRef.current;
-    if (!el) return;
-    const onScroll = () => setScrolled(el.scrollTop > 2);
-    el.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => el.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const items = Array.isArray(initialItems) ? initialItems : [];
-  const shown = items.slice(0, visible);
-
-  return (
-    <div className="results-left">
-      <form action="/search" method="get" className="results-search" role="search">
-        <input
-          name="q"
-          defaultValue={q}
-          placeholder="Your next move...."
-          className="results-input results-input--home"
-        />
-      </form>
-
-      <section
-        className={cx("members-box", expanded && "members-box--expanded")}
-        aria-label="Members"
-      >
-        <div
-          ref={listRef}
-          className={cx(
-            "members-scroll",
-            expanded && "members-scroll--scroll",
-            scrolled && "members-scroll--topfade"
-          )}
-        >
-          <ul className="members-list">
-            {shown.map((m, i) => {
-              const name = m?.name || m?.title || "Sample Member";
-              const industry = m?.role || m?.industry || m?.subtitle || "";
-              const quote = m?.quote || m?.context || m?.summary || "";
-              return (
-                <li key={`m-${i}`} className="member-card member-card--clean">
-                  <div className="member-head">
-                    <div className="member-name">{name}</div>
-                    {industry && <span className="sep">|</span>}
-                    {industry && <div className="member-meta">{industry}</div>}
-                  </div>
-                  {quote && <div className="member-quote">“{quote}”</div>}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-
-        {items.length > shown.length && (
-          <div className="load-more-row">
-            <button
-              type="button"
-              className="load-more-btn"
-              onClick={() => {
-                setVisible((v) => v + 3);
-                setExpanded(true);
-              }}
-            >
-              LOAD MORE
-            </button>
-          </div>
-        )}
-      </section>
-    </div>
-  );
-}
-
-/* ================== CLIENT: Right categories ================== */
-function RightSectionClient({
-  label,
-  items,
-  href,
-}: {
-  label: string;
-  items: any[];
-  href: string;
-}) {
-  "use client";
-  const [open, setOpen] = React.useState(false);
-  const [visible, setVisible] = React.useState(1);
-  const hasMore = (items?.length ?? 0) > visible;
-
-  return (
-    <details className={cx("right-acc", open && "right-acc--open")} open={open}>
-      <summary
-        className="right-head"
-        onClick={(e) => {
-          e.preventDefault();
-          setOpen((o) => !o);
-        }}
-        aria-expanded={open}
-      >
-        <span className="right-title">{label}</span>
-        <span className="right-arrow">▸</span>
-      </summary>
-
-      {open && (
-        <div className={cx("right-body", visible > 3 && "right-body--scroll")}>
-          <ul className="right-list">
-            {(items ?? []).slice(0, visible).map((it, i) => {
-              const title =
-                it?.title ||
-                it?.name ||
-                (label.toUpperCase() === "CALL LIBRARY" ? "Transcript" : "Result");
-              const url = it?.url || href || "#";
-              const sub =
-                it?.quote || it?.summary || it?.description || it?.context || "";
-              return (
-                <li key={`${label}-${i}`} className="right-card">
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="right-card-title"
-                  >
-                    {title}
-                  </a>
-                  {!!sub && <div className="right-card-sub">“{sub}”</div>}
-                  <div className="asset-sep" />
-                </li>
-              );
-            })}
-          </ul>
-
-          {hasMore && (
-            <div className="right-load-more-row">
-              <button
-                type="button"
-                className="right-load-more"
-                onClick={() => setVisible((v) => v + 3)}
-              >
-                Load more
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </details>
-  );
-}
-
-/* ================== SERVER: safe fetch & normalize ================== */
-async function safeFetchSections(q: string) {
-  const sections = {
-    members: [] as any[],
-    transcripts: [] as any[],
-    resources: [] as any[],
-    partnerships: [] as any[],
-    events: [] as any[],
-  };
-
+/* ---------- client fetch with strong guards ---------- */
+async function fetchSections(q: string, signal?: AbortSignal): Promise<Sections> {
+  if (!q) return EMPTY;
   try {
-    const url = `${getBaseUrl()}/api/ask?q=${encodeURIComponent(q)}`;
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(`/api/ask?q=${encodeURIComponent(q)}`, {
+      cache: "no-store",
+      signal,
+    });
 
-    if (!res) return sections;
-
+    // Non-200 or non-JSON? return empty safely.
+    if (!res.ok) return EMPTY;
     const ct = res.headers.get("content-type") || "";
-    if (!ct.includes("application/json")) {
-      // non-JSON reply: don’t parse, just bail to empty sections
-      return sections;
-    }
+    if (!ct.includes("application/json")) return EMPTY;
 
-    const data = await res.json().catch(() => null);
-    if (!data) return sections;
-
-    // Common shapes we’ve seen
+    const data: any = await res.json().catch(() => null);
+    if (!data) return EMPTY;
     const maybe = data?.data ?? data;
 
-    const tryParseBlock = (s: string) => {
-      const m = s?.match?.(/```json\s*([\s\S]*?)\s*```/i);
-      if (!m) return null;
-      try {
-        return JSON.parse(m[1]);
-      } catch {
-        return null;
-      }
-    };
-
+    // direct structured
     if (
       maybe?.transcripts ||
       maybe?.resources ||
@@ -232,9 +57,14 @@ async function safeFetchSections(q: string) {
       };
     }
 
-    if (typeof maybe?.openai_response === "string") {
-      const parsed = tryParseBlock(maybe.openai_response);
-      if (parsed) {
+    // JSON fenced in string
+    const block = typeof maybe?.openai_response === "string"
+      ? maybe.openai_response.match(/```json\s*([\s\S]*?)\s*```/i)
+      : null;
+
+    if (block?.[1]) {
+      try {
+        const parsed = JSON.parse(block[1]);
         return {
           members: parsed?.community_chats?.items ?? [],
           transcripts: parsed?.transcripts?.items ?? [],
@@ -242,77 +72,334 @@ async function safeFetchSections(q: string) {
           partnerships: parsed?.partnerships?.items ?? [],
           events: parsed?.events?.items ?? [],
         };
+      } catch {
+        return EMPTY;
       }
     }
 
-    return sections;
+    return EMPTY;
   } catch {
-    // Any throw — return safe empties
-    return sections;
+    return EMPTY;
   }
 }
 
-/* ================== PAGE ================== */
-export default async function SearchPage({
-  searchParams,
-}: {
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
-  const raw = searchParams?.q;
-  const q = Array.isArray(raw) ? raw[0] : raw ?? "";
+/* ======================= PAGE (client) ======================= */
+export default function SearchPage() {
+  const params = useSearchParams();
+  const router = useRouter();
+  const q = params.get("q") ?? "";
 
-  if (!q) {
-    return (
-      <main className="results">
-        <div className="results-shell">
-          <div className="results-left">
-            <form action="/search" method="get" className="results-search" role="search">
-              <input
-                name="q"
-                placeholder="Your next move...."
-                className="results-input results-input--home"
-                autoFocus
-              />
-            </form>
-          </div>
-          <aside className="results-right">
-            <div className="other-footer">OTHER</div>
-          </aside>
-        </div>
-      </main>
-    );
-  }
+  const [sections, setSections] = React.useState<Sections>(EMPTY);
+  const [loading, setLoading] = React.useState<boolean>(!!q);
+  const [err, setErr] = React.useState<string | null>(null);
 
-  const sections = await safeFetchSections(q);
+  React.useEffect(() => {
+    const ctrl = new AbortController();
+    setLoading(!!q);
+    setErr(null);
+    setSections(EMPTY);
+    if (!q) return;
+
+    fetchSections(q, ctrl.signal)
+      .then((s) => setSections(s))
+      .catch(() => setErr("Failed to load."))
+      .finally(() => setLoading(false));
+
+    return () => ctrl.abort();
+  }, [q]);
+
+  // ----- members pane local UI state
+  const [membersVisible, setMembersVisible] = React.useState(4);
+  const [membersExpanded, setMembersExpanded] = React.useState(false);
+  const listRef = React.useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled] = React.useState(false);
+
+  React.useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const onScroll = () => setScrolled(el.scrollTop > 2);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const shownMembers = (sections.members ?? []).slice(0, membersVisible);
+
+  // ----- right category state
+  const [openPartnerships, setOpenPartnerships] = React.useState(false);
+  const [openTranscripts, setOpenTranscripts] = React.useState(false);
+  const [openResources, setOpenResources] = React.useState(false);
+  const [openEvents, setOpenEvents] = React.useState(false);
+
+  const [visPart, setVisPart] = React.useState(1);
+  const [visTrans, setVisTrans] = React.useState(1);
+  const [visRes, setVisRes] = React.useState(1);
+  const [visEvt, setVisEvt] = React.useState(1);
+
+  const loadMoreBtn = (hasMore: boolean, onClick: () => void) =>
+    hasMore ? (
+      <div className="right-load-more-row">
+        <button type="button" className="right-load-more" onClick={onClick}>
+          Load more
+        </button>
+      </div>
+    ) : null;
+
+  const onSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    const nextQ = String(fd.get("q") || "");
+    router.push(`/search?q=${encodeURIComponent(nextQ)}`);
+  };
 
   return (
     <main className="results">
       <div className="results-shell">
-        {/* LEFT: search + members */}
-        <MembersPaneClient initialItems={sections.members ?? []} q={q} />
+        {/* ========== LEFT (search + members) ========== */}
+        <div className="results-left">
+          <form className="results-search" role="search" onSubmit={onSubmit}>
+            <input
+              name="q"
+              defaultValue={q}
+              placeholder="Your next move...."
+              className="results-input results-input--home"
+            />
+          </form>
 
-        {/* RIGHT: categories (closed by default) */}
+          <section
+            className={cx("members-box", membersExpanded && "members-box--expanded")}
+            aria-label="Members"
+          >
+            <div
+              ref={listRef}
+              className={cx(
+                "members-scroll",
+                membersExpanded && "members-scroll--scroll",
+                scrolled && "members-scroll--topfade"
+              )}
+            >
+              <ul className="members-list">
+                {shownMembers.map((m, i) => {
+                  const name = m?.name || m?.title || "Sample Member";
+                  const industry = m?.role || m?.industry || m?.subtitle || "";
+                  const quote = m?.quote || m?.context || m?.summary || "";
+                  return (
+                    <li key={`m-${i}`} className="member-card member-card--clean">
+                      <div className="member-head">
+                        <div className="member-name">{name}</div>
+                        {industry && <span className="sep">|</span>}
+                        {industry && <div className="member-meta">{industry}</div>}
+                      </div>
+                      {quote && <div className="member-quote">“{quote}”</div>}
+                    </li>
+                  );
+                })}
+                {!loading && shownMembers.length === 0 && (
+                  <li className="member-card member-card--clean">
+                    <div className="member-quote">“No results found.”</div>
+                  </li>
+                )}
+              </ul>
+            </div>
+
+            {(sections.members?.length ?? 0) > shownMembers.length && (
+              <div className="load-more-row">
+                <button
+                  type="button"
+                  className="load-more-btn"
+                  onClick={() => {
+                    setMembersVisible((v) => v + 3);
+                    setMembersExpanded(true);
+                  }}
+                >
+                  LOAD MORE
+                </button>
+              </div>
+            )}
+          </section>
+        </div>
+
+        {/* ========== RIGHT (categories; closed by default) ========== */}
         <aside className="results-right">
-          <RightSectionClient
-            label="PARTNERSHIPS"
-            items={sections.partnerships ?? []}
-            href="/partnerships"
-          />
-          <RightSectionClient
-            label="CALL LIBRARY"
-            items={sections.transcripts ?? []}
-            href="/transcripts"
-          />
-          <RightSectionClient
-            label="RESOURCES"
-            items={sections.resources ?? []}
-            href="/resources"
-          />
-          <RightSectionClient
-            label="EVENTS"
-            items={sections.events ?? []}
-            href="/events"
-          />
+          {/* Partnerships */}
+          <details
+            className={cx("right-acc", openPartnerships && "right-acc--open")}
+            open={openPartnerships}
+            onToggle={(e) => setOpenPartnerships((e.target as HTMLDetailsElement).open)}
+          >
+            <summary className="right-head">
+              <span className="right-title">PARTNERSHIPS</span>
+              <span className="right-arrow">▸</span>
+            </summary>
+
+            {openPartnerships && (
+              <div className={cx("right-body", visPart > 3 && "right-body--scroll")}>
+                <ul className="right-list">
+                  {(sections.partnerships ?? [])
+                    .slice(0, visPart)
+                    .map((it, i) => {
+                      const title = it?.title || it?.name || "Partnership";
+                      const sub = it?.description || it?.summary || it?.quote || "";
+                      const url = it?.url || "#";
+                      return (
+                        <li key={`p-${i}`} className="right-card">
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="right-card-title"
+                          >
+                            {title}
+                          </a>
+                          {!!sub && <div className="right-card-sub">“{sub}”</div>}
+                          <div className="asset-sep" />
+                        </li>
+                      );
+                    })}
+                </ul>
+                {loadMoreBtn(
+                  (sections.partnerships?.length ?? 0) > visPart,
+                  () => setVisPart((v) => v + 3)
+                )}
+              </div>
+            )}
+          </details>
+
+          {/* Call Library */}
+          <details
+            className={cx("right-acc", openTranscripts && "right-acc--open")}
+            open={openTranscripts}
+            onToggle={(e) => setOpenTranscripts((e.target as HTMLDetailsElement).open)}
+          >
+            <summary className="right-head">
+              <span className="right-title">CALL LIBRARY</span>
+              <span className="right-arrow">▸</span>
+            </summary>
+
+            {openTranscripts && (
+              <div className={cx("right-body", visTrans > 3 && "right-body--scroll")}>
+                <ul className="right-list">
+                  {(sections.transcripts ?? [])
+                    .slice(0, visTrans)
+                    .map((it, i) => {
+                      const title = it?.title || it?.name || "Call";
+                      const sub = it?.quote || it?.summary || it?.description || "";
+                      const url = it?.url || "#";
+                      return (
+                        <li key={`t-${i}`} className="right-card">
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="right-card-title"
+                          >
+                            {title}
+                          </a>
+                          {!!sub && <div className="right-card-sub">“{sub}”</div>}
+                          <div className="asset-sep" />
+                        </li>
+                      );
+                    })}
+                </ul>
+                {loadMoreBtn(
+                  (sections.transcripts?.length ?? 0) > visTrans,
+                  () => setVisTrans((v) => v + 3)
+                )}
+              </div>
+            )}
+          </details>
+
+          {/* Resources */}
+          <details
+            className={cx("right-acc", openResources && "right-acc--open")}
+            open={openResources}
+            onToggle={(e) => setOpenResources((e.target as HTMLDetailsElement).open)}
+          >
+            <summary className="right-head">
+              <span className="right-title">RESOURCES</span>
+              <span className="right-arrow">▸</span>
+            </summary>
+
+            {openResources && (
+              <div className={cx("right-body", visRes > 3 && "right-body--scroll")}>
+                <ul className="right-list">
+                  {(sections.resources ?? [])
+                    .slice(0, visRes)
+                    .map((it, i) => {
+                      const title = it?.title || it?.name || "Resource";
+                      const sub = it?.description || it?.summary || it?.quote || "";
+                      const url = it?.url || "#";
+                      return (
+                        <li key={`r-${i}`} className="right-card">
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="right-card-title"
+                          >
+                            {title}
+                          </a>
+                          {!!sub && <div className="right-card-sub">“{sub}”</div>}
+                          <div className="asset-sep" />
+                        </li>
+                      );
+                    })}
+                </ul>
+                {loadMoreBtn(
+                  (sections.resources?.length ?? 0) > visRes,
+                  () => setVisRes((v) => v + 3)
+                )}
+              </div>
+            )}
+          </details>
+
+          {/* Events */}
+          <details
+            className={cx("right-acc", openEvents && "right-acc--open")}
+            open={openEvents}
+            onToggle={(e) => setOpenEvents((e.target as HTMLDetailsElement).open)}
+          >
+            <summary className="right-head">
+              <span className="right-title">EVENTS</span>
+              <span className="right-arrow">▸</span>
+            </summary>
+
+            {openEvents && (
+              <div className={cx("right-body", visEvt > 3 && "right-body--scroll")}>
+                <ul className="right-list">
+                  {(sections.events ?? [])
+                    .slice(0, visEvt)
+                    .map((it, i) => {
+                      const name = it?.title || it?.name || "Event";
+                      const meta = [
+                        it?.location,
+                        it?.dates || it?.date_range,
+                      ].filter(Boolean).join(" | ");
+                      const url = it?.url || "#";
+                      return (
+                        <li key={`e-${i}`} className="right-card">
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="right-card-title"
+                          >
+                            {name}
+                          </a>
+                          {!!meta && <div className="right-card-sub">{meta}</div>}
+                          <div className="asset-sep" />
+                        </li>
+                      );
+                    })}
+                </ul>
+                {loadMoreBtn(
+                  (sections.events?.length ?? 0) > visEvt,
+                  () => setVisEvt((v) => v + 3)
+                )}
+              </div>
+            )}
+          </details>
 
           <div className="other-footer">OTHER</div>
         </aside>
