@@ -24,7 +24,6 @@ type Sections = {
   events: any[];
 };
 
-/** Accept many plausible shapes, plus fenced ```json blocks. */
 function parseSections(data: any): Sections {
   const body = data?.data ?? data ?? {};
 
@@ -34,14 +33,10 @@ function parseSections(data: any): Sections {
       t.match(/```json\s*([\s\S]*?)```/i) ??
       t.match(/```\s*([\s\S]*?)```/i);
     if (!m) return null;
-    try {
-      return JSON.parse((m[1] || "").trim());
-    } catch {
-      return null;
-    }
+    try { return JSON.parse((m[1] || "").trim()); } catch { return null; }
   };
 
-  const normalize = (src: any) => ({
+  const norm = (src: any) => ({
     members:
       src?.community_chats?.items ?? src?.community_chats ??
       src?.members?.items ?? src?.members ??
@@ -54,16 +49,14 @@ function parseSections(data: any): Sections {
     events: src?.events?.items ?? src?.events ?? [],
   });
 
-  // structured?
   if (
     body?.community_chats || body?.members || body?.community ||
     body?.transcripts || body?.calls ||
     body?.resources || body?.partnerships || body?.events
-  ) return normalize(body);
+  ) return norm(body);
 
-  // fenced?
   const parsed = fence(body?.openai_response ?? body?.message);
-  if (parsed) return normalize(parsed);
+  if (parsed) return norm(parsed);
 
   return { members: [], transcripts: [], resources: [], partnerships: [], events: [] };
 }
@@ -72,7 +65,6 @@ function parseSections(data: any): Sections {
 export default async function SearchPage({
   searchParams,
 }: {
-  // IMPORTANT: plain object (do NOT Promise/await)
   searchParams?: Record<string, string | string[] | undefined>;
 }) {
   const sp = searchParams ?? {};
@@ -114,7 +106,6 @@ export default async function SearchPage({
   let resStatus = 0;
   let resError: string | null = null;
   let json: RawAPI | null = null;
-
   if (q) {
     try {
       const res = await fetch(`/api/ask?q=${encodeURIComponent(q)}`, { cache: "no-store" });
@@ -132,7 +123,40 @@ export default async function SearchPage({
     }
   }
 
-  const sections = json ? parseSections(json) : { members: [], transcripts: [], resources: [], partnerships: [], events: [] };
+  let sections = json ? parseSections(json) : { members: [], transcripts: [], resources: [], partnerships: [], events: [] };
+
+  const counts = {
+    members: sections.members?.length ?? 0,
+    partnerships: sections.partnerships?.length ?? 0,
+    transcripts: sections.transcripts?.length ?? 0,
+    resources: sections.resources?.length ?? 0,
+    events: sections.events?.length ?? 0,
+  };
+
+  // If debug AND everything is empty, inject a tiny sample so we can confirm the UI renders.
+  if (debugFlag && Object.values(counts).every((n) => (n ?? 0) === 0)) {
+    sections = {
+      members: [
+        { name: "Sample Member", industry: "Recruiting", quote: "I interviewed 12 candidates and found 2 A-players." },
+        { name: "Jordan Lee", industry: "Sales Ops", quote: "Referrals beat cold every time." },
+        { name: "Maya Chen", industry: "Talent", quote: "Always screen for coachability." },
+        { name: "Chris P.", industry: "Hiring", quote: "Keep the bar high; move fast." },
+      ],
+      partnerships: [
+        { title: "NetRevenue", description: "Specializes in recruiting setters for remote sales teams.", url: "#" },
+        { title: "TalentFlow", description: "Fractional recruiters for scaling teams.", url: "#" },
+      ],
+      transcripts: [
+        { title: "Evan Carroll APC Masterclass Call", quote: "The main bottleneck is actually talent acquisition.", url: "#" },
+      ],
+      resources: [
+        { title: "Outbound Interview Scorecard", description: "A one-pager to standardize setter interviews.", url: "#" },
+      ],
+      events: [
+        { title: "APC Hiring Roundtable", description: "NYC · Oct 15", url: "#" },
+      ],
+    };
+  }
 
   // +3 URLs (preserve counts + q + debug)
   const withParam = (key: "np"|"nt"|"nr"|"ne", val: number) => {
@@ -154,48 +178,41 @@ export default async function SearchPage({
   };
   const moreMembersHref = `/search?${new URLSearchParams({ q, m: "all", ...(debugFlag ? { debug: "1" } : {}) }).toString()}#members`;
 
-  const counts = {
-    members: sections.members?.length ?? 0,
-    partnerships: sections.partnerships?.length ?? 0,
-    transcripts: sections.transcripts?.length ?? 0,
-    resources: sections.resources?.length ?? 0,
-    events: sections.events?.length ?? 0,
-  };
-
   return (
     <main className="results">
       {/* landing background underlay (no dark overlay on results) */}
       <div className="landing-wrap" aria-hidden="true" />
 
-      {/* ==== DEBUG BAR (forced visible when debug=1) ==== */}
+      {/* BIG DEBUG BAR when &debug=1 */}
       {debugFlag && (
         <div
           style={{
             position: "fixed",
-            top: 10,
-            left: 10,
-            zIndex: 9999,
-            background: "rgba(255,255,255,0.92)",
+            top: 12, left: 12,
+            zIndex: 2147483647,
+            background: "#fff",
             color: "#111",
-            borderRadius: 8,
-            padding: "10px 12px",
-            boxShadow: "0 2px 10px rgba(0,0,0,.35)",
-            maxWidth: 520,
+            borderRadius: 10,
+            padding: "12px 14px",
+            boxShadow: "0 10px 30px rgba(0,0,0,.45)",
+            maxWidth: 560
           }}
         >
           <div style={{fontWeight: 800, marginBottom: 6}}>
-            /api/ask status: {resStatus || "—"} {resError ? ` · ${resError}` : ""}
+            /api/ask status: {resStatus || "—"} {resError ? `· ${resError}` : ""}
           </div>
           <div style={{fontSize: 13, marginBottom: 6, lineHeight: 1.35}}>
-            counts → members:{counts.members} · partnerships:{counts.partnerships} ·
-            transcripts:{counts.transcripts} · resources:{counts.resources} · events:{counts.events}
+            counts — members:{sections.members.length} · partnerships:{sections.partnerships.length} · transcripts:{sections.transcripts.length} · resources:{sections.resources.length} · events:{sections.events.length}
           </div>
-          <details>
-            <summary style={{cursor:"pointer"}}>raw payload</summary>
-            <pre style={{maxHeight: 260, overflow: "auto", fontSize: 12, lineHeight: 1.25, marginTop: 8}}>
-{JSON.stringify(json, null, 2)}
+          <details open>
+            <summary style={{cursor:"pointer"}}>raw payload (first 2k chars)</summary>
+            <pre style={{maxHeight: 280, overflow: "auto", fontSize: 12, lineHeight: 1.25, marginTop: 8, whiteSpace:"pre-wrap"}}>
+{JSON.stringify(json, null, 2)?.slice(0, 2000)}
             </pre>
           </details>
+          <div style={{marginTop:8, fontSize:12, opacity:.75}}>
+            Tip: If everything is empty, I injected sample rows so you can verify the UI. Remove &debug=1 to go back to live data.
+          </div>
         </div>
       )}
 
@@ -215,22 +232,19 @@ export default async function SearchPage({
           </form>
 
           {/* Members box */}
-          <div id="members" className={["members-box", membersScroll ? "members-box--expanded" : ""].join(" ")}>
+          <div id="members" className={["members-box", (sp.m === "all" ? "members-box--expanded" : "")].join(" ")}>
             {/* corner ticks motif */}
             <div className="members-title-row" aria-hidden="true">
               <span className="corner left" />
               <span className="corner right" />
             </div>
 
-            <MembersScroller scrollMode={membersScroll}>
+            <MembersScroller scrollMode={sp.m === "all"}>
               <ul className="members-list">
                 {(sections.members ?? []).slice(0, membersToShow).map((m, i) => {
-                  const name =
-                    m?.title || m?.name || m?.display_name || "Member";
-                  const industry =
-                    m?.industry || m?.role || m?.expertise || "";
-                  const quote =
-                    m?.quote || m?.line || m?.excerpt || m?.description || m?.context;
+                  const name = m?.title || m?.name || m?.display_name || "Member";
+                  const industry = m?.industry || m?.role || m?.expertise || "";
+                  const quote = m?.quote || m?.line || m?.excerpt || m?.description || m?.context;
                   return (
                     <li key={`member-${i}`} className="member-card member-card--clean">
                       <div className="member-head">
@@ -244,8 +258,8 @@ export default async function SearchPage({
               </ul>
             </MembersScroller>
 
-            {/* Load more (visible when there are additional members) */}
-            {!membersScroll && counts.members > MEMBERS_INITIAL ? (
+            {/* Load more (visible when additional members exist) */}
+            {(sp.m !== "all") && (sections.members?.length ?? 0) > MEMBERS_INITIAL ? (
               <div className="load-more-row">
                 <Link href={moreMembersHref} className="load-more-btn">LOAD MORE</Link>
               </div>
@@ -260,15 +274,15 @@ export default async function SearchPage({
             label="PARTNERSHIPS"
             items={sections.partnerships ?? []}
             count={nPartnerships}
-            scroll={scrollMode.partnerships}
-            moreHref={withParam("np", nPartnerships + 3)}
+            scroll={nPartnerships >= 4}
+            moreHref={withParam("np", nPartnerships + 3,)}
           />
           <RightSection
             id="nt"
             label="CALL LIBRARY"
             items={sections.transcripts ?? []}
             count={nTranscripts}
-            scroll={scrollMode.transcripts}
+            scroll={nTranscripts >= 4}
             moreHref={withParam("nt", nTranscripts + 3)}
           />
           <RightSection
@@ -276,7 +290,7 @@ export default async function SearchPage({
             label="RESOURCES"
             items={sections.resources ?? []}
             count={nResources}
-            scroll={scrollMode.resources}
+            scroll={nResources >= 4}
             moreHref={withParam("nr", nResources + 3)}
           />
           <RightSection
@@ -284,7 +298,7 @@ export default async function SearchPage({
             label="EVENTS"
             items={sections.events ?? []}
             count={nEvents}
-            scroll={scrollMode.events}
+            scroll={nEvents >= 4}
             moreHref={withParam("ne", nEvents + 3)}
           />
 
