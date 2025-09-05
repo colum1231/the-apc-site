@@ -12,202 +12,10 @@ function getBaseUrl() {
   return "http://localhost:3000";
 }
 
-/* eslint-disable @next/next/no-img-element */
-import React from "react";
-function cx(...a: Array<string | false | undefined>) {
-  return a.filter(Boolean).join(" ");
-}
+import MembersPaneClient from "./MembersPaneClient";
+import RightSectionClient from "./RightSectionClient";
 
-/* ===========================
-   MEMBERS (client) 
-=========================== */
-function MembersPaneClient({
-  initialItems,
-  q,
-}: {
-  initialItems: any[];
-  q: string;
-}) {
-  "use client";
-
-  const INITIAL = 4;
-  const [visible, setVisible] = React.useState(INITIAL);
-  const [scrollMode, setScrollMode] = React.useState(false);
-  const listRef = React.useRef<HTMLDivElement>(null);
-  const [scrolled, setScrolled] = React.useState(false);
-
-  React.useEffect(() => {
-    const el = listRef.current;
-    if (!el) return;
-    const onScroll = () => setScrolled(el.scrollTop > 2);
-    el.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => el.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const items = Array.isArray(initialItems) ? initialItems : [];
-  const shown = items.slice(0, visible);
-
-  const onMore = () => {
-    if (!scrollMode) setScrollMode(true);
-    setVisible((v) => v + 3);
-  };
-
-  return (
-    <div className="results-left">
-      {/* search box – same look/size as landing */}
-      <form action="/search" method="get" className="results-search" role="search">
-        <input
-          name="q"
-          defaultValue={q}
-          placeholder="Your next move...."
-          className="input results-input results-input--home"
-          autoFocus
-        />
-      </form>
-
-      {/* MEMBERS BOX (centered within left half) */}
-      <section className={cx("members-box", scrollMode && "members-box--scroll")}>
-        {/* tiny corner ticks belong to this header only */}
-        <div className="members-title-row" aria-hidden>
-          <div className="corner" />
-          <div className="corner right" />
-        </div>
-
-        <div
-          ref={listRef}
-          className={cx(
-            "members-scroll",
-            scrollMode && "members-scroll--scroll",
-            scrollMode && scrolled && "members-scroll--topfade"
-          )}
-        >
-          <ul className="members-list">
-            {shown.map((m, i) => {
-              const name = m?.name || m?.title || "Member";
-              const role = m?.role || m?.industry || m?.subtitle || "";
-              const quote = m?.quote || m?.context || "";
-              return (
-                <li key={`m-${i}`} className="member-card member-card--clean">
-                  <div className="member-head">
-                    <span className="member-name">{name}</span>
-                    {role && (
-                      <>
-                        <span className="sep">|</span>
-                        <span className="member-meta">{role}</span>
-                      </>
-                    )}
-                  </div>
-                  {quote && <div className="member-quote">“{quote}”</div>}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-
-        {items.length > shown.length && (
-          <div className="load-more-row load-more-row--members">
-            <button
-              className="load-more-btn"
-              type="button"
-              onClick={onMore}
-              aria-label="Load more members"
-            >
-              LOAD MORE
-            </button>
-          </div>
-        )}
-      </section>
-    </div>
-  );
-}
-
-/* ===========================
-   RIGHT CATEGORY (client)
-   - default CLOSED
-   - open shows 1 asset (10px gap, 25px indent via CSS)
-   - 'Load more' => +3; after >=4, body becomes scrollable with fades
-=========================== */
-function RightSectionClient({
-  label,
-  items,
-  href,
-}: {
-  label: string;
-  items: any[];
-  href: string;
-}) {
-  "use client";
-
-  const [open, setOpen] = React.useState(false);
-  const [visible, setVisible] = React.useState(1);
-  const hasMore = (items?.length ?? 0) > visible;
-  const scrollMode = visible >= 4;
-
-  const onToggle = () => {
-    setOpen((o) => {
-      if (!o) setVisible(1); // reset to 1 on open
-      return !o;
-    });
-  };
-
-  const onMore = () => setVisible((v) => v + 3);
-
-  return (
-    <section className={cx("right-acc", scrollMode && "right-acc--scroll")}>
-      <button type="button" className="right-head" onClick={onToggle} aria-expanded={open}>
-        <span className="right-title">{label}</span>
-        <span className="right-arrow">{open ? "▾" : "▸"}</span>
-      </button>
-
-      {open && (
-        <div className={cx("right-body", scrollMode && "right-body--scroll")}>
-          <ul className="right-list">
-            {(items ?? []).slice(0, visible).map((it, i) => {
-              const title =
-                it?.title ||
-                it?.name ||
-                (label === "CALL LIBRARY" ? "Call" : "Result");
-              const url = it?.url || href || "#";
-              const sub =
-                it?.quote || it?.summary || it?.description || it?.context || "";
-              return (
-                <li key={`${label}-${i}`}>
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="right-card-title"
-                  >
-                    {title}
-                  </a>
-                  <div className={cx("right-card-sub", !sub && "right-card-sub--empty")}>
-                    {sub ? `“${sub}”` : " "}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-
-          {hasMore && (
-            <div className="right-load-more-row">
-              <button
-                type="button"
-                className="right-load-more"
-                onClick={onMore}
-                aria-label={`Load more ${label.toLowerCase()}`}
-              >
-                Load more
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </section>
-  );
-}
-
-// ------- server page -------
+/* ------- server page ------- */
 export default async function SearchPage({
   searchParams,
 }: {
@@ -226,7 +34,7 @@ export default async function SearchPage({
     );
   }
 
-  // call API safely
+  // default empty sections
   let sections = {
     members: [] as any[],
     transcripts: [] as any[],
@@ -235,6 +43,7 @@ export default async function SearchPage({
     events: [] as any[],
   };
 
+  // fetch & normalize
   try {
     const url = `${getBaseUrl()}/api/ask?q=${encodeURIComponent(q)}`;
     const res = await fetch(url, { cache: "no-store" });
@@ -243,7 +52,6 @@ export default async function SearchPage({
     try {
       data = await res.json();
     } catch {
-      // ignore – keep empty sections on parse issues
       data = {};
     }
 
@@ -255,7 +63,13 @@ export default async function SearchPage({
       try { return JSON.parse(m[1]); } catch { return null; }
     };
 
-    if (maybe?.transcripts || maybe?.resources || maybe?.partnerships || maybe?.events || maybe?.community_chats) {
+    if (
+      maybe?.transcripts ||
+      maybe?.resources ||
+      maybe?.partnerships ||
+      maybe?.events ||
+      maybe?.community_chats
+    ) {
       sections = {
         members: maybe?.community_chats ?? [],
         transcripts: maybe?.transcripts?.items ?? maybe?.transcripts ?? [],
@@ -276,16 +90,18 @@ export default async function SearchPage({
       }
     }
   } catch {
-    // swallow; keep empty sections
+    // keep sections empty on failure
   }
 
-  const rightOrder = (["partnerships", "transcripts", "resources", "events"] as const);
+  const rightOrder = ["partnerships", "transcripts", "resources", "events"] as const;
 
   return (
     <main className="results">
       <div className="results-shell">
+        {/* LEFT (search + members) */}
         <MembersPaneClient initialItems={sections.members ?? []} q={q} />
 
+        {/* RIGHT (headers closed by default; preview→scroll) */}
         <aside className="results-right">
           {rightOrder.map((k) => (
             <RightSectionClient
