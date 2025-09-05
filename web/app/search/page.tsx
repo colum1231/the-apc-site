@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "./search.css"; // Add this import for layout styles
 export const metadata: Metadata = { title: "Search • APC" };
 
 /** --- Types that match your API shape (keep loose) --- */
@@ -42,23 +43,22 @@ export default async function Page({
   const events = data?.events ?? [];
 
   return (
-    <main className="results">
-      <div className="results-shell">
+    <main className="apc-results-main">
+      <div className="apc-results-shell">
         {/* LEFT HALF */}
-        <section className="results-left">
+        <section className="apc-results-left">
+          {/* Search box at top */}
+          <form action="/search" method="get" className="apc-results-search">
+            <input
+              className="apc-results-input--home"
+              type="text"
+              name="q"
+              defaultValue={q}
+              placeholder="Your next move…."
+              aria-label="Search"
+            />
+          </form>
           <div className="left-inner">
-            {/* Prompt (same as home) */}
-            <form action="/search" method="get" className="results-search">
-              <input
-                className="results-input--home"
-                type="text"
-                name="q"
-                defaultValue={q}
-                placeholder="Your next move…."
-                aria-label="Search"
-              />
-            </form>
-
             {/* Members box */}
             <div className="members-box">
               <ul className="members-list">
@@ -77,8 +77,6 @@ export default async function Page({
                   </li>
                 ))}
               </ul>
-
-              {/* Load more (still stubbed to keep behavior stable for now) */}
               {members.length > 4 && (
                 <div className="load-more-row">
                   <a className="load-more-btn" href={`/search?q=${encodeURIComponent(q)}&m=members`}>
@@ -91,7 +89,7 @@ export default async function Page({
         </section>
 
         {/* RIGHT HALF */}
-        <section className="results-right">
+        <section className="apc-results-right">
           <div className="right-inner">
             {/* PARTNERSHIPS */}
             <details className="right-acc">
