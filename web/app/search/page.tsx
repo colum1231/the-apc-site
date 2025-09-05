@@ -13,13 +13,15 @@ export default function SearchPage({
   const sp = searchParams ?? {};
   const rawQ = sp.q;
   const q = Array.isArray(rawQ) ? rawQ[0] : rawQ ?? "";
+  const rawM = sp.m;
+  const m = Array.isArray(rawM) ? rawM[0] : rawM;
+  const membersScroll = m === "all"; // only scroll after "Load more"
 
   return (
     <main className="results">
-      {/* Landing background sits BEHIND results */}
+      {/* landing background image behind content */}
       <div className="landing-wrap" aria-hidden="true" />
 
-      {/* Two equal halves; padding handled by CSS */}
       <div className="results-shell">
         {/* ================= LEFT HALF ================= */}
         <section className="results-left">
@@ -29,13 +31,17 @@ export default function SearchPage({
               name="q"
               defaultValue={q}
               placeholder="What’s your next move?"
-              className="results-input results-input--home results-input--force"
+              className="results-input results-input--home"
               autoFocus
             />
           </form>
 
-          {/* MEMBERS BOX — sample content so you always see text */}
-          <div id="members" className="members-box">
+          {/* MEMBERS BOX */}
+          <div
+            id="members"
+            className={`members-box ${membersScroll ? "members-box--scroll" : ""}`}
+          >
+            {/* small corner ticks motif on the real box only */}
             <div className="members-title-row" aria-hidden="true">
               <span className="corner left" />
               <span className="corner right" />
@@ -77,16 +83,24 @@ export default function SearchPage({
                 </li>
               </ul>
             </div>
-
-            <div className="load-more-row">
-              <Link href="/search?q=test&m=all" className="load-more-btn">LOAD MORE</Link>
-            </div>
           </div>
+
+          {/* Load more CTA: toggles scroll via ?m=all and stays ~170px from bottom */}
+          {!membersScroll && (
+            <div className="load-more-row load-more-row--members">
+              <Link
+                href={`/search?${new URLSearchParams({ q: q || "test", m: "all" }).toString()}`}
+                className="load-more-btn"
+              >
+                LOAD MORE
+              </Link>
+            </div>
+          )}
         </section>
 
         {/* ================= RIGHT HALF ================= */}
         <aside className="results-right">
-          {/* All categories CLOSED by default */}
+          {/* Closed by default; headings only until clicked */}
           <details className="right-acc" id="np">
             <summary className="right-head">
               <span className="right-title">PARTNERSHIPS</span>
@@ -102,7 +116,7 @@ export default function SearchPage({
                 </li>
               </ul>
               <div className="right-load-more-row">
-                <Link href="/search?q=test&np=4" className="right-load-more">Load more</Link>
+                <Link href={`/search?${new URLSearchParams({ q: q || "test", np: "4" }).toString()}`} className="right-load-more">Load more</Link>
               </div>
             </div>
           </details>
@@ -122,7 +136,7 @@ export default function SearchPage({
                 </li>
               </ul>
               <div className="right-load-more-row">
-                <Link href="/search?q=test&nt=4" className="right-load-more">Load more</Link>
+                <Link href={`/search?${new URLSearchParams({ q: q || "test", nt: "4" }).toString()}`} className="right-load-more">Load more</Link>
               </div>
             </div>
           </details>
@@ -142,7 +156,7 @@ export default function SearchPage({
                 </li>
               </ul>
               <div className="right-load-more-row">
-                <Link href="/search?q=test&nr=4" className="right-load-more">Load more</Link>
+                <Link href={`/search?${new URLSearchParams({ q: q || "test", nr: "4" }).toString()}`} className="right-load-more">Load more</Link>
               </div>
             </div>
           </details>
@@ -162,7 +176,7 @@ export default function SearchPage({
                 </li>
               </ul>
               <div className="right-load-more-row">
-                <Link href="/search?q=test&ne=4" className="right-load-more">Load more</Link>
+                <Link href={`/search?${new URLSearchParams({ q: q || "test", ne: "4" }).toString()}`} className="right-load-more">Load more</Link>
               </div>
             </div>
           </details>
