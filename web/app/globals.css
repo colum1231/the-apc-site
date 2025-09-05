@@ -427,48 +427,95 @@ html, body { height: 100%; background: #000; }
 /* Force the landing background to render from /public */
 html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fixed; }
 
-/* ===== Results Page VARS (scoped) ===== */
+/* ===== Landing — keep as you have it (copied known-good) ===== */
 :root{
+  --outline: #545454;
+  --hq-color: #272727;
   --apc-text:#8b8989;
 
-  /* layout */
-  --center-gutter:110px;      /* 110px from true center & edges */
-  --shell-top:135px;          /* prompt offset from top */
-  --shell-bottom:110px;       /* bottom safe area */
-
-  /* members box */
-  --box-width:740px;
-  --box-pad:60px;
+  /* Results layout variables */
+  --center-gutter:110px;     /* 110px from true center & edges */
+  --shell-top:135px;         /* prompt offset from top */
+  --shell-bottom:110px;      /* bottom safe area */
+  --box-width:740px;         /* members box width */
+  --box-pad:60px;            /* members inner padding */
   --corner-grey:#545454;
   --corner-run:75px;
-
-  /* fades */
-  --fade:150px;               /* bottom fade (and top when scrolled) */
+  --fade:150px;              /* fade distance */
 }
 
-/* ===== Search Results Layout (scoped so landing stays unchanged) ===== */
+html, body { height: 100%; background: #000; }
+body, input, button, a { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+
+/* Background image used on both landing and results */
+.landing-wrap{
+  position: fixed;
+  inset: 0;
+  display: block;
+  background: #000 url("/landing-bg.png") center / cover no-repeat;
+}
+
+/* Landing (logo/search/HQ) — your existing look */
+.logo{
+  position: fixed;
+  top: 97.5px;     /* top edge */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: auto;
+}
+.search{
+  position: fixed;
+  top: 400px;      /* landing input top */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 350px;
+  height: 42.5px;
+  display: flex; align-items: center; justify-content: center;
+}
+.input{
+  width: 100%; height: 100%;
+  border: 2px solid var(--outline);
+  border-radius: 999px;
+  background: transparent; color: #373737;
+  text-align: center; font-size: 16.5px;
+  outline: none; padding: 0 28px;
+}
+.input::placeholder{ color: var(--outline); opacity: 0.6; transition: opacity .15s ease; }
+.input:focus::placeholder{ opacity: 0; }
+.hq{
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: 28px; font-size: 18px; color: var(--hq-color);
+  opacity: 0.5; text-decoration: none;
+}
+.hq:hover{ opacity: 0.8; text-decoration: underline; text-underline-offset: 3px; }
+
+/* Force landing bg too */
+html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fixed; }
+
+/* ===== Results Page (scoped; does NOT affect landing) ===== */
 .results{
   min-height:100vh;
   color:var(--apc-text);
   position:relative;
-  background:transparent;        /* no black overlay on results */
+  background:transparent;              /* no dark overlay */
 }
-.results .landing-wrap{ opacity:1; } /* show landing image fully */
+.results .landing-wrap{ opacity:1; }   /* show bg fully */
 
 .results-shell{
   max-width:1920px;
   margin:0 auto;
   padding:var(--shell-top) 0 var(--shell-bottom);
   display:grid;
-  grid-template-columns:1fr 1fr; /* equal halves */
-  gap:0;                         /* invisible center divide */
+  grid-template-columns:1fr 1fr;       /* equal halves */
+  gap:0;                               /* invisible center divide */
 }
 
-/* 110px padding on both sides (from center & page edges) */
+/* 110px padding from center & page edges */
 .results-left{  padding:0 var(--center-gutter); }
-.results-right{ padding:0 var(--center-gutter); margin-top:15px; } /* +15px → first header ~150px */
+.results-right{ padding:0 var(--center-gutter); margin-top:15px; } /* ~150px first header */
 
-/* Prompt — same as home */
+/* Prompt — same as home (results version) */
 .results-search{ display:flex; justify-content:flex-start; }
 .results-input.results-input--home{
   width:350px; height:42.5px;
@@ -483,12 +530,12 @@ html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fi
 .members-box{
   position:relative;
   width:var(--box-width);
-  margin:100px auto 0;             /* 100px below prompt */
+  margin:100px auto 0;                 /* 100px below prompt */
   padding:var(--box-pad);
   background:transparent;
-  border:1px solid #000;           /* baseline black border */
+  border:1px solid #000;               /* baseline black border */
 }
-/* top-corner grey runs (75px) */
+/* grey runs 75px from top corners */
 .members-box::before{
   content:""; position:absolute; inset:0; pointer-events:none;
   background:
@@ -508,7 +555,7 @@ html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fi
 }
 .members-box--expanded::after{ opacity:1; }
 
-/* Corner ticks bar */
+/* corner ticks bar */
 .members-title-row{ height:26px; position:relative; margin-bottom:12px; }
 .members-title-row .corner{
   position:absolute; top:0; width:46px; height:26px;
@@ -516,14 +563,14 @@ html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fi
 }
 .members-title-row .corner.right{ right:0; left:auto; border-left:0; border-right:2px solid var(--corner-grey); }
 
-/* Members list — clean (no bullets/dividers/handles/contact) */
+/* clean members list */
 .members-list{ list-style:none; padding-left:0; display:flex; flex-direction:column; gap:18px; }
 .member-card.member-card--clean{ border:none; padding:0; }
 .member-head{ display:flex; align-items:baseline; gap:10px; }
-.member-name{ font-size:16px; color:#8b8989; font-weight:700; }
-.member-meta{ font-size:16px; color:#7a7a7a; font-weight:700; } /* darker grey */
+.member-name{ font-size:16px; color:var(--apc-text); font-weight:700; }
+.member-meta{ font-size:16px; color:#7a7a7a; font-weight:700; }
 .sep{ opacity:.55; }
-.member-quote{ margin-top:6px; font-style:italic; color:#8b8989; }
+.member-quote{ margin-top:6px; font-style:italic; color:var(--apc-text); }
 
 /* Members scroll — bottom fade always; top fade only when scrolled */
 .members-scroll{ position:relative; }
@@ -552,11 +599,11 @@ html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fi
     rgba(0,0,0,0) 100%);
 }
 
-/* Load more (like OTHER) + subtle spinner behind */
+/* Load more (members) */
 .load-more-row{ margin-top:16px; display:flex; justify-content:center; }
 .load-more-btn{
   position:relative; display:inline-block; text-decoration:none;
-  font-weight:800; letter-spacing:.06em; color:#8b8989; padding:.25rem .5rem;
+  font-weight:800; letter-spacing:.06em; color:var(--apc-text); padding:.25rem .5rem;
 }
 .load-more-btn::after{
   content:""; position:absolute; left:50%; top:50%; width:1.5em; height:1.5em; transform:translate(-50%,-50%);
@@ -567,8 +614,8 @@ html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fi
 
 /* ===== Right column ===== */
 .right-acc{
-  border:0;                     /* invisible lines by default */
-  margin-bottom:125px;          /* default spacing between headers */
+  border:0;                       /* invisible lines by default */
+  margin-bottom:125px;            /* default spacing between headers */
 }
 .right-acc--scroll{ margin-bottom:25px; } /* after Load more */
 
@@ -576,10 +623,10 @@ html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fi
   display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 2px;
 }
 .right-title{
-  font-size:24px;               /* per spec */
-  font-weight:800; letter-spacing:.06em; color:#8b8989;
+  font-size:24px;                 /* per spec */
+  font-weight:800; letter-spacing:.06em; color:var(--apc-text);
 }
-.right-arrow{ color:#8b8989; opacity:.85; transform:translateY(-1px); }
+.right-arrow{ color:var(--apc-text); opacity:.85; transform:translateY(-1px); }
 .right-acc[open] .right-arrow{ transform:rotate(90deg); }
 
 /* Open body: first asset 10px below, indented 25px */
@@ -587,13 +634,13 @@ html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fi
 .right-list{
   list-style:none; padding:0; margin:0;
   display:flex; flex-direction:column;
-  gap:20px;                      /* 20px between assets */
-  padding-left:25px;             /* indent 25px */
+  gap:20px;                        /* 20px between assets */
+  padding-left:25px;               /* indent 25px */
 }
 
-/* Scroll mode (after first Load more: count>=4) */
+/* Scroll mode after first Load more (>=4 items) */
 .right-body--scroll{
-  max-height:420px;              /* ~3 assets visible; adjust if needed */
+  max-height:420px;                /* ~3 assets visible */
   overflow:auto;
   padding-right:6px;
   -webkit-mask-image: linear-gradient(to bottom,
@@ -607,15 +654,16 @@ html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fi
 }
 
 /* Asset text + separators (non-members) */
-.right-card-title{ font-size:16px; color:#8b8989; text-decoration:none; }
+.right-card-title{ font-size:16px; color:var(--apc-text); text-decoration:none; }
 .right-card-title:hover{ text-decoration:underline; }
 .right-card-sub{ font-size:14px; opacity:.85; }
+.right-card-sub--empty{ opacity:.6; font-style:italic; }
 .asset-sep{ height:1px; background:rgba(139,137,137,.85); margin:5px 0; }
 
 /* Right “Load more” (active) */
 .right-load-more-row{ margin-top:10px; padding-left:25px; }
 .right-load-more{
-  color:#8b8989; text-decoration:none; font-weight:700; letter-spacing:.06em; position:relative; padding:.2rem .35rem;
+  color:var(--apc-text); text-decoration:none; font-weight:700; letter-spacing:.06em; position:relative; padding:.2rem .35rem;
 }
 .right-load-more::after{
   content:""; position:absolute; left:50%; top:50%; width:1.5em; height:1.5em; transform:translate(-50%,-50%);
@@ -625,7 +673,7 @@ html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fi
 
 /* OTHER footer centered, with divider 20px above */
 .other-footer{
-  margin-top:32px; font-weight:800; letter-spacing:.06em; color:#8b8989; text-align:center; position:relative;
+  margin-top:32px; font-weight:800; letter-spacing:.06em; color:var(--apc-text); text-align:center; position:relative;
 }
 .other-footer::before{
   content:""; position:absolute; left:10%; right:10%; height:1px; background:#3a3a3a; top:-20px;

@@ -1,10 +1,13 @@
 // web/app/search/page.tsx
 import Link from "next/link";
+import * as React from "react";
 
+/* ------- server settings ------- */
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
+/* ------- types & helpers ------- */
 type RawAPI = {
   ok?: boolean;
   data?: any;
@@ -18,200 +21,235 @@ type Sections = {
   resources: any[];
   partnerships: any[];
   events: any[];
-  tokens?: Partial<Record<keyof Omit<Sections, "tokens">, string>>;
 };
 
-/** Extracts the ```json … ``` block from openai_response and parses it,
- * or maps an already-structured payload. */
-function parseStructured(data: any): Sections | null {
-  const body = data?.data ?? data;
+function parseSections(data: any): Sections {
+  const body = data?.data ?? data ?? {};
+  const getFence = (t: unknown) => {
+    if (typeof t !== "string") return null;
+    const m = t.match(/```json\s*([\s\S]*?)```/i) ?? t.match(/```\s*([\s\S]*?)```/i);
+    if (!m) return null;
+    try { return JSON.parse((m[1] || "").trim()); } catch { return null; }
+  };
 
-  const looksStructured =
-    body?.transcripts ||
-    body?.community_chats ||
-    body?.resources ||
-    body?.partnerships ||
-    body?.events;
-
-  if (looksStructured) {
+  // Already structured?
+  if (body?.transcripts || body?.resources || body?.partnerships || body?.events || body?.community_chats) {
     return {
-      members: body?.community_chats ?? [],
-      transcripts: body?.transcripts ?? [],
-      resources: body?.resources ?? [],
-      partnerships: body?.partnerships ?? [],
-      events: body?.events ?? [],
-      tokens: {
-        members: body?.community_chats?.load_more_token,
-        transcripts: body?.transcripts?.load_more_token,
-        resources: body?.resources?.load_more_token,
-        partnerships: body?.partnerships?.load_more_token,
-        events: body?.events?.load_more_token,
-      },
+      members: body?.community_chats?.items ?? body?.community_chats ?? [],
+      transcripts: body?.transcripts?.items ?? body?.transcripts ?? [],
+      resources: body?.resources?.items ?? body?.resources ?? [],
+      partnerships: body?.partnerships?.items ?? body?.partnerships ?? [],
+      events: body?.events?.items ?? body?.events ?? [],
     };
   }
 
-  const text: string | undefined =
-    body?.openai_response ?? body?.message ?? data?.openai_response;
-  if (!text) return null;
-
-  const fence =
-    text.match(/```json\s*([\s\S]*?)```/) ?? text.match(/```\s*([\s\S]*?)```/);
-  if (!fence) return null;
-
-  try {
-    const obj = JSON.parse(fence[1].trim());
-    return {
-      members: obj.community_chats?.items ?? obj.community_chats ?? [],
-      transcripts: obj.transcripts?.items ?? obj.transcripts ?? [],
-      resources: obj.resources?.items ?? obj.resources ?? [],
-      partnerships: obj.partnerships?.items ?? obj.partnerships ?? [],
-      events: obj.events?.items ?? obj.events ?? [],
-      tokens: {
-        members: obj.community_chats?.load_more_token,
-        transcripts: obj.transcripts?.load_more_token,
-        resources: obj.resources?.load_more_token,
-        partnerships: obj.partnerships?.load_more_token,
-        events: obj.events?.load_more_token,
-      },
-    };
-  } catch {
-    return null;
-  }
+  // Try fenced JSON inside openai_response/message
+  const parsed = getFence(body?.openai_response ?? body?.message);
+  return {
+    members: parsed?.community_chats?.items ?? parsed?.community_chats ?? [],
+    transcripts: parsed?.transcripts?.items ?? parsed?.transcripts ?? [],
+    resources: parsed?.resources?.items ?? parsed?.resources ?? [],
+    partnerships: parsed?.partnerships?.items ?? parsed?.partnerships ?? [],
+    events: parsed?.events?.items ?? parsed?.events ?? [],
+  };
 }
 
+/* ---- client-only mini scroller (top-fade when scrolled) ---- */
+function MembersScroller({
+  children,
+  scrollMode,
+}: {
+  children: React.ReactNode;
+  scrollMode: boolean;
+}) {
+  "use client";
+  const ref = React.useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled] = React.useState(false);
+  React.useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const onScroll = () => setScrolled(el.scrollTop > 0);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+  return (
+    <div
+      ref={ref}
+      className={[
+        "members-scroll",
+        scrollMode ? "members-scroll--scroll" : "",
+        scrolled ? "members-scroll--topfade" : "",
+      ].join(" ")}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ------- page (server) ------- */
 export default async function SearchPage({
-  // IMPORTANT: this is a plain object — do NOT Promise/await it
+  // IMPORTANT: treat as a plain object (do NOT Promise/await it)
   searchParams,
 }: {
   searchParams?: Record<string, string | string[] | undefined>;
 }) {
-  const raw = searchParams?.q;
-  const q = Array.isArray(raw) ? raw[0] : raw ?? "";
+  const rawQ = searchParams?.q;
+  const q = Array.isArray(rawQ) ? rawQ[0] : rawQ ?? "";
 
-  // Ask API (same-origin)
+  /* ===== LEFT: Members ===== */
+  const mParam = searchParams?.m;
+  const membersScroll = (Array.isArray(mParam) ? mParam[0] : mParam) === "all";
+  const MEMBERS_INITIAL = 4;
+  const membersToShow = membersScroll ? Number.MAX_SAFE_INTEGER : MEMBERS_INITIAL;
+
+  /* ===== RIGHT: per-category counts (+3 per click) ===== */
+  const numFrom = (k: string, def: number) => {
+    const v = searchParams?.[k];
+    const s = Array.isArray(v) ? v[0] : v;
+    const n = Number(s);
+    return Number.isFinite(n) && n > 0 ? n : def;
+  };
+  const nPartnerships = numFrom("np", 1);
+  const nTranscripts  = numFrom("nt", 1);
+  const nResources    = numFrom("nr", 1);
+  const nEvents       = numFrom("ne", 1);
+
+  const scrollMode = {
+    partnerships: nPartnerships >= 4,
+    transcripts:  nTranscripts  >= 4,
+    resources:    nResources    >= 4,
+    events:       nEvents       >= 4,
+  };
+
+  // fetch (same-origin)
   let json: RawAPI | null = null;
   if (q) {
     try {
-      const res = await fetch(`/api/ask?q=${encodeURIComponent(q)}`, {
-        cache: "no-store",
-      });
-      try {
-        json = (await res.json()) as RawAPI;
-      } catch {
-        json = { ok: false, status: res.status, body: await res.text() } as any;
-      }
+      const res = await fetch(`/api/ask?q=${encodeURIComponent(q)}`, { cache: "no-store" });
+      try { json = (await res.json()) as RawAPI; }
+      catch { json = { ok:false, status:res.status, body:await res.text() } as any; }
     } catch {
-      json = { ok: false, error: "fetch failed" } as any;
+      json = { ok:false, error:"fetch failed" } as any;
     }
   }
+  const sections = json ? parseSections(json) : { members: [], transcripts: [], resources: [], partnerships: [], events: [] };
 
-  const sections = json ? parseStructured(json) : null;
+  // +3 URLs (preserve all counts + q)
+  const withParam = (key: "np"|"nt"|"nr"|"ne", val: number) => {
+    const sp = new URLSearchParams();
+    sp.set("q", q);
+    sp.set("np", String(nPartnerships));
+    sp.set("nt", String(nTranscripts));
+    sp.set("nr", String(nResources));
+    sp.set("ne", String(nEvents));
+    sp.set(key, String(val));
+    return `/search?${sp.toString()}#${key}`;
+  };
+  const moreHref = {
+    partnerships: withParam("np", nPartnerships + 3),
+    transcripts:  withParam("nt", nTranscripts + 3),
+    resources:    withParam("nr", nResources + 3),
+    events:       withParam("ne", nEvents + 3),
+  };
 
-  // keep your existing initial counts so CSS layout stays consistent
-  const LEFT_COUNT = 5;
-  const RIGHT_COUNT = 3;
+  const moreMembersHref = `/search?${new URLSearchParams({ q, m: "all" }).toString()}#members`;
+
+  /* Safe placeholders if any category is empty */
+  const ensureNonEmpty = (arr: any[], placeholderTitle: string) =>
+    (arr && arr.length > 0)
+      ? arr
+      : [{ title: placeholderTitle, description: "No results found." }];
 
   return (
     <main className="results">
-      {/* reuse landing background */}
+      {/* landing background underlay (no dark overlay on results) */}
       <div className="landing-wrap" aria-hidden="true" />
 
       <div className="results-shell">
-        {/* LEFT: Search + Members */}
+        {/* LEFT half */}
         <section className="results-left">
+          {/* Prompt (home style) */}
           <form action="/search" method="get" className="results-search" role="search">
             <input
               name="q"
               defaultValue={q}
               placeholder="What’s your next move?"
-              className="input results-input"
+              className="results-input results-input--home"
               autoFocus
             />
           </form>
 
-          <div className="members-wrap">
-            {/* corner ticks */}
+          {/* Members box */}
+          <div id="members" className={["members-box", membersScroll ? "members-box--expanded" : ""].join(" ")}>
+            {/* corner ticks motif */}
             <div className="members-title-row" aria-hidden="true">
               <span className="corner left" />
               <span className="corner right" />
             </div>
 
-            <h2 className="members-title">Members</h2>
+            <MembersScroller scrollMode={membersScroll}>
+              <ul className="members-list">
+                {(sections.members ?? []).slice(0, membersToShow).map((m, i) => {
+                  const name = m?.title || m?.name || m?.display_name || "Member";
+                  const industry = m?.industry || m?.role || m?.expertise || "";
+                  const quote = m?.quote || m?.line || m?.excerpt || m?.description;
+                  return (
+                    <li key={`member-${i}`} className="member-card member-card--clean">
+                      <div className="member-head">
+                        <span className="member-name member-name--bold">{name}</span>
+                        {industry && (<><span className="sep">|</span><span className="member-meta member-meta--bold">{String(industry)}</span></>)}
+                      </div>
+                      {quote && <div className="member-quote">“{quote}”</div>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </MembersScroller>
 
-            {!sections && (
-              <p className="muted">Type a search above to see relevant members.</p>
-            )}
-
-            {sections && (
-              <>
-                <ul className="members-list">
-                  {(sections.members ?? []).slice(0, LEFT_COUNT).map((m, i) => {
-                    const name =
-                      m?.title || m?.name || m?.display_name || "Member";
-                    const quote = m?.quote || m?.line || m?.excerpt;
-                    const meta =
-                      m?.role || m?.industry || m?.expertise || m?.username || "";
-
-                    return (
-                      <li key={`member-${i}`} className="member-card">
-                        <div className="member-head">
-                          <span className="member-name">{name}</span>
-                          {meta && (
-                            <>
-                              <span className="sep">|</span>
-                              <span className="member-meta">
-                                {String(meta).toUpperCase()}
-                              </span>
-                            </>
-                          )}
-                        </div>
-
-                        {quote && <div className="member-quote">“{quote}”</div>}
-
-                        <div className="member-contact">CONTACT</div>
-                      </li>
-                    );
-                  })}
-                </ul>
-
-                {(sections.members ?? []).length > LEFT_COUNT && (
-                  <div className="load-more-row">
-                    <button className="load-more-btn" type="button" disabled>
-                      LOAD MORE
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
+            {/* Load more for members */}
+            {!membersScroll && (sections.members?.length ?? 0) > MEMBERS_INITIAL ? (
+              <div className="load-more-row">
+                <Link href={moreMembersHref} className="load-more-btn">LOAD MORE</Link>
+              </div>
+            ) : null}
           </div>
         </section>
 
-        {/* RIGHT: collapsibles */}
+        {/* RIGHT half */}
         <aside className="results-right">
           <RightSection
+            id="np"
             label="PARTNERSHIPS"
-            items={sections?.partnerships ?? []}
-            count={RIGHT_COUNT}
-            href="/partnerships"
+            items={ensureNonEmpty(sections.partnerships ?? [], "Partnerships")}
+            count={nPartnerships}
+            scroll={scrollMode.partnerships}
+            moreHref={moreHref.partnerships}
           />
           <RightSection
+            id="nt"
             label="CALL LIBRARY"
-            items={sections?.transcripts ?? []}
-            count={RIGHT_COUNT}
-            href="/calls"
+            items={ensureNonEmpty(sections.transcripts ?? [], "Call Library")}
+            count={nTranscripts}
+            scroll={scrollMode.transcripts}
+            moreHref={moreHref.transcripts}
           />
           <RightSection
+            id="nr"
             label="RESOURCES"
-            items={sections?.resources ?? []}
-            count={RIGHT_COUNT}
-            href="/resources"
+            items={ensureNonEmpty(sections.resources ?? [], "Resources")}
+            count={nResources}
+            scroll={scrollMode.resources}
+            moreHref={moreHref.resources}
           />
           <RightSection
+            id="ne"
             label="EVENTS"
-            items={sections?.events ?? []}
-            count={RIGHT_COUNT}
-            href="/events"
+            items={ensureNonEmpty(sections.events ?? [], "Events")}
+            count={nEvents}
+            scroll={scrollMode.events}
+            moreHref={moreHref.events}
           />
+
           <div className="other-footer">OTHER</div>
         </aside>
       </div>
@@ -219,71 +257,68 @@ export default async function SearchPage({
   );
 }
 
-/** Right hand collapsible section (unchanged structure/visuals). */
+/* ---- Right-side UI ---- */
 function RightSection({
+  id,
   label,
   items,
   count,
-  href,
+  scroll,
+  moreHref,
 }: {
+  id: "np" | "nt" | "nr" | "ne";
   label: string;
   items: any[];
   count: number;
-  href: string;
+  scroll: boolean;
+  moreHref: string;
 }) {
-  if (!items || items.length === 0) {
-    return (
-      <div className="right-head no-items">
-        <Link href={href} className="right-title">
-          {label}
-        </Link>
-        <Link href={href} className="right-arrow" aria-label={`Go to ${label}`}>
-          ▸
-        </Link>
-      </div>
-    );
-  }
+  const all = items ?? [];
+  const open = true; // auto-open to show preview
+  const shown = all.slice(0, Math.max(1, count));
+  const hasMore = all.length > shown.length;
 
   return (
-    <details className="right-acc">
+    <details className={["right-acc", scroll ? "right-acc--scroll" : ""].join(" ")} open={open} id={id}>
       <summary className="right-head">
         <span className="right-title">{label}</span>
-        <span className="right-arrow" aria-hidden>
-          ▸
-        </span>
+        <span className="right-arrow" aria-hidden>▾</span>
       </summary>
 
-      <div className="right-body">
+      <div className={["right-body", scroll ? "right-body--scroll" : ""].join(" ")}>
         <ul className="right-list">
-          {items.slice(0, count).map((it: any, i: number) => {
-            const title =
-              it?.title || it?.name || it?.display_name || "Untitled";
-            const quote = it?.quote || it?.summary || it?.description;
-            const url = it?.url;
-
-            return (
-              <li key={`${label}-${i}`} className="right-card">
-                {url ? (
-                  <a href={url} target="_blank" rel="noreferrer" className="right-card-title">
-                    {title}
-                  </a>
-                ) : (
-                  <div className="right-card-title">{title}</div>
-                )}
-                {quote && <div className="right-card-sub">{quote}</div>}
-              </li>
-            );
-          })}
+          {shown.map((it, i) => (
+            <li key={`${label}-${i}`} className="right-card">
+              <RightCard item={it} />
+            </li>
+          ))}
         </ul>
 
-        {items.length > count && (
-          <div className="right-loadmore">
-            <button className="load-more-btn" type="button" disabled>
-              LOAD MORE
-            </button>
+        {hasMore && (
+          <div className="right-load-more-row">
+            <Link href={moreHref} className="right-load-more">Load more</Link>
           </div>
         )}
       </div>
     </details>
+  );
+}
+
+function RightCard({ item }: { item: any }) {
+  const title = item?.title || item?.name || item?.display_name || "Untitled";
+  const sub = item?.quote || item?.summary || item?.description || item?.context || "";
+  const url = item?.url;
+
+  return (
+    <div className="right-card-inner">
+      {url ? (
+        <a href={url} target="_blank" rel="noreferrer" className="right-card-title">{title}</a>
+      ) : (
+        <div className="right-card-title">{title}</div>
+      )}
+      <div className="asset-sep" />
+      {sub ? <div className="right-card-sub">“{sub}”</div> : <div className="right-card-sub right-card-sub--empty">“No results found.”</div>}
+      <div className="asset-sep" />
+    </div>
   );
 }
