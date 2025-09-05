@@ -873,3 +873,149 @@ html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fi
   .results-left, .results-right{ padding:0 24px; }
   .results-right{ padding-top:40px; }
 }
+
+/* ===== RESULTS PAGE — hard, scoped overrides (landing unaffected) [v3] ===== */
+.results{
+  height:100vh;           /* page never scrolls */
+  overflow:hidden;
+  position:relative;
+  color:#8b8989;
+  background:transparent;
+}
+
+/* TRUE 50/50 halves across the full viewport */
+.results-shell{
+  height:100%;
+  width:100vw;
+  margin:0;
+  display:grid;
+  grid-template-columns:50vw 50vw;
+  gap:0;
+  padding:135px 0 110px;   /* 135 top, 110 bottom per spec */
+  align-items:start;
+}
+
+/* 110px padding from center and edges */
+.results-left{  padding:0 110px; position:relative; }
+.results-right{ padding:0 110px; padding-top:150px; } /* first header 150px from top */
+
+/* Search — same as home */
+.results-search{ position:relative; z-index:5; margin:0 0 100px 0; } /* 100px gap to members box */
+.results-input.results-input--home{
+  width:350px; height:42.5px; border:2px solid #545454; border-radius:999px;
+  background:transparent; color:#373737; text-align:center; font-size:16.5px; padding:0 28px;
+}
+.results-input.results-input--home::placeholder{ color:#545454; opacity:.6; }
+.results-input.results-input--home:focus::placeholder{ opacity:0; }
+
+/* ===== Members box (ONLY the real box) ===== */
+.members-box{
+  position:relative;
+  width:740px;
+  margin:0 auto;
+  padding:60px;
+  border:1px solid transparent; /* keep sides transparent */
+
+  /* Fixed height so: top spacing (100), bottom safe area (110) respected */
+  /* 100vh - searchTop(135) - gapBelowSearch(100) - bottom(110) */
+  height: calc(100vh - 135px - 100px - 110px);
+  box-sizing: border-box;
+}
+
+/* Real box corners (grey runs 75px; rest transparent) */
+.members-box::before{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:
+    linear-gradient(#545454,#545454) top left  / 75px 1px no-repeat,
+    linear-gradient(#545454,#545454) top right / 75px 1px no-repeat,
+    linear-gradient(#545454,#545454) top left  / 1px 75px no-repeat,
+    linear-gradient(#545454,#545454) top right / 1px 75px no-repeat;
+}
+
+/* Internal scroll area sits inside padding */
+.members-scroll{
+  height: calc(100% - 0px);           /* take full box height */
+  overflow: hidden;                    /* no scroll yet */
+  padding-right: 6px;                  /* space for potential scrollbar */
+  -webkit-mask-image: linear-gradient(to bottom,
+    rgba(0,0,0,1) 0%,
+    rgba(0,0,0,1) calc(100% - 150px),  /* bottom fade distance */
+    rgba(0,0,0,0) 100%);
+          mask-image: linear-gradient(to bottom,
+    rgba(0,0,0,1) 0%,
+    rgba(0,0,0,1) calc(100% - 150px),
+    rgba(0,0,0,0) 100%);
+}
+
+/* After "Load more" (m=all): enable scrolling (top+bottom fades) */
+.members-box--scroll .members-scroll{
+  overflow:auto;
+  -webkit-mask-image: linear-gradient(to bottom,
+    rgba(0,0,0,0) 0px,              /* show top fade now that we can scroll */
+    rgba(0,0,0,1) 150px,
+    rgba(0,0,0,1) calc(100% - 150px),
+    rgba(0,0,0,0) 100%);
+          mask-image: linear-gradient(to bottom,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,1) 150px,
+    rgba(0,0,0,1) calc(100% - 150px),
+    rgba(0,0,0,0) 100%);
+}
+
+/* Members content (no bullets/dividers) */
+.members-list{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:18px; }
+.member-card--clean{ border:0; padding:0; }
+.member-head{ display:flex; align-items:baseline; gap:10px; }
+.member-name{ font-weight:700; color:#8b8989; }
+.member-meta{ font-weight:700; color:#7a7a7a; }
+.member-quote{ margin-top:6px; font-style:italic; color:#8b8989; }
+.sep{ opacity:.55; }
+
+/* Remove any stray global corner frames on the results page */
+.results .corner--left,
+.results .corner--right{ display:none !important; }
+
+/* Load more button ~170px from bottom */
+.load-more-row--members{
+  margin-top: 50px;                  /* with fixed members-box height, this nets ~170px from bottom */
+  display:flex; justify-content:center;
+}
+.load-more-btn{
+  position:relative; display:inline-block; text-decoration:none;
+  font-weight:800; letter-spacing:.06em; color:#8b8989; padding:.25rem .5rem;
+}
+.load-more-btn::after{               /* subtle spinner halo */
+  content:""; position:absolute; left:50%; top:50%; width:1.5em; height:1.5em; transform:translate(-50%,-50%);
+  border:2px solid rgba(139,137,137,.12); border-top-color:rgba(139,137,137,.28);
+  border-radius:50%; animation: spin 1.1s linear infinite; z-index:-1;
+}
+@keyframes spin{ to{ transform:translate(-50%,-50%) rotate(360deg); } }
+
+/* Right column — headers visible, closed by default */
+.right-acc{ margin-bottom:125px; border:0; }
+.right-head{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 2px; cursor:pointer; }
+.right-title{ font-size:24px; font-weight:800; letter-spacing:.06em; color:#8b8989; }
+.right-arrow{ color:#8b8989; opacity:.85; }
+.right-body{ padding:10px 2px 0 2px; display:block; }
+.right-list{ list-style:none; padding:0; margin:0; padding-left:25px; display:flex; flex-direction:column; gap:20px; }
+.right-card-title{ color:#8b8989; text-decoration:none; }
+.right-card-title:hover{ text-decoration:underline; }
+.right-card-sub{ color:#8b8989; opacity:.9; }
+
+.other-footer{
+  margin-top:32px; font-weight:800; letter-spacing:.06em; color:#8b8989; text-align:center; position:relative;
+}
+.other-footer::before{
+  content:""; position:absolute; left:10%; right:10%; height:1px; background:#3a3a3a; top:-20px;
+}
+
+/* Keep landing image behind content */
+.landing-wrap{ z-index:0; }
+.results-shell, .results-left, .results-right{ position:relative; z-index:1; }
+
+/* Safety: stack on small widths */
+@media (max-width:1200px){
+  .results-shell{ grid-template-columns:1fr; width:100%; }
+  .results-left, .results-right{ padding:0 24px; }
+  .results-right{ padding-top:40px; }
+}
