@@ -22,19 +22,35 @@ export default function RightSectionClient({
 
   const onToggle = () => {
     setOpen((o) => {
-      if (!o) setVisible(1); // reset to 1 on open
+      if (!o) setVisible(1); // reset on opening
       return !o;
     });
   };
 
   const onMore = () => setVisible((v) => v + 3);
 
+  const onKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onToggle();
+    }
+  };
+
   return (
     <section className={cx("right-acc", scrollMode && "right-acc--scroll")}>
-      <button type="button" className="right-head" onClick={onToggle} aria-expanded={open}>
+      {/* header: div with role=button -> no native button background */}
+      <div
+        role="button"
+        tabIndex={0}
+        className="right-head"
+        onClick={onToggle}
+        onKeyDown={onKey}
+        aria-expanded={open}
+        aria-label={`${label} section`}
+      >
         <span className="right-title">{label}</span>
         <span className="right-arrow">{open ? "▾" : "▸"}</span>
-      </button>
+      </div>
 
       {open && (
         <div className={cx("right-body", scrollMode && "right-body--scroll")}>
