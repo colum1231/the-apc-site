@@ -12,6 +12,7 @@ type RawAPI = {
   ok?: boolean;
   data?: any;
   openai_response?: string;
+  message?: string;
   [k: string]: any;
 };
 
@@ -23,18 +24,24 @@ type Sections = {
   events: any[];
 };
 
-/** Try many shapes the API might return, plus fenced ```json blocks. */
+/** Accept many plausible shapes, plus fenced ```json blocks. */
 function parseSections(data: any): Sections {
   const body = data?.data ?? data ?? {};
 
   const fence = (t: unknown) => {
     if (typeof t !== "string") return null;
-    const m = t.match(/```json\s*([\s\S]*?)```/i) ?? t.match(/```\s*([\s\S]*?)```/i);
+    const m =
+      t.match(/```json\s*([\s\S]*?)```/i) ??
+      t.match(/```\s*([\s\S]*?)```/i);
     if (!m) return null;
-    try { return JSON.parse((m[1] || "").trim()); } catch { return null; }
+    try {
+      return JSON.parse((m[1] || "").trim());
+    } catch {
+      return null;
+    }
   };
 
-  const from = (src: any) => ({
+  const normalize = (src: any) => ({
     members:
       src?.community_chats?.items ?? src?.community_chats ??
       src?.members?.items ?? src?.members ??
@@ -47,28 +54,25 @@ function parseSections(data: any): Sections {
     events: src?.events?.items ?? src?.events ?? [],
   });
 
-  // already structured?
+  // structured?
   if (
     body?.community_chats || body?.members || body?.community ||
     body?.transcripts || body?.calls ||
     body?.resources || body?.partnerships || body?.events
-  ) {
-    return from(body);
-  }
+  ) return normalize(body);
 
-  // fenced JSON?
+  // fenced?
   const parsed = fence(body?.openai_response ?? body?.message);
-  if (parsed) return from(parsed);
+  if (parsed) return normalize(parsed);
 
-  // default empty
   return { members: [], transcripts: [], resources: [], partnerships: [], events: [] };
 }
 
 /* ------- page (server) ------- */
 export default async function SearchPage({
-  // IMPORTANT: plain object (do NOT Promise/await)
   searchParams,
 }: {
+  // IMPORTANT: plain object (do NOT Promise/await)
   searchParams?: Record<string, string | string[] | undefined>;
 }) {
   const sp = searchParams ?? {};
@@ -108,7 +112,7 @@ export default async function SearchPage({
 
   // fetch (same-origin)
   let resStatus = 0;
-  let resText: string | null = null;
+  let resError: string | null = null;
   let json: RawAPI | null = null;
 
   if (q) {
@@ -118,18 +122,19 @@ export default async function SearchPage({
       try {
         json = (await res.json()) as RawAPI;
       } catch {
-        resText = await res.text();
-        json = { ok: false, status: resStatus, body: resText } as any;
+        const txt = await res.text();
+        resError = `Non-JSON: ${txt.slice(0, 400)}`;
+        json = { ok: false, status: resStatus, body: txt } as any;
       }
     } catch (err: any) {
-      resText = String(err?.message || err || "fetch failed");
-      json = { ok: false, error: resText } as any;
+      resError = String(err?.message || err || "fetch failed");
+      json = { ok: false, error: resError } as any;
     }
   }
 
   const sections = json ? parseSections(json) : { members: [], transcripts: [], resources: [], partnerships: [], events: [] };
 
-  // +3 URLs (preserve all counts + q)
+  // +3 URLs (preserve counts + q + debug)
   const withParam = (key: "np"|"nt"|"nr"|"ne", val: number) => {
     const p = new URLSearchParams();
     p.set("q", q);
@@ -138,7 +143,7 @@ export default async function SearchPage({
     p.set("nr", String(nResources));
     p.set("ne", String(nEvents));
     p.set(key, String(val));
-    if (debugFlag) p.set("debug", "1"); // keep debug on
+    if (debugFlag) p.set("debug", "1");
     return `/search?${p.toString()}#${key}`;
   };
   const moreHref = {
@@ -149,10 +154,50 @@ export default async function SearchPage({
   };
   const moreMembersHref = `/search?${new URLSearchParams({ q, m: "all", ...(debugFlag ? { debug: "1" } : {}) }).toString()}#members`;
 
+  const counts = {
+    members: sections.members?.length ?? 0,
+    partnerships: sections.partnerships?.length ?? 0,
+    transcripts: sections.transcripts?.length ?? 0,
+    resources: sections.resources?.length ?? 0,
+    events: sections.events?.length ?? 0,
+  };
+
   return (
     <main className="results">
       {/* landing background underlay (no dark overlay on results) */}
       <div className="landing-wrap" aria-hidden="true" />
+
+      {/* ==== DEBUG BAR (forced visible when debug=1) ==== */}
+      {debugFlag && (
+        <div
+          style={{
+            position: "fixed",
+            top: 10,
+            left: 10,
+            zIndex: 9999,
+            background: "rgba(255,255,255,0.92)",
+            color: "#111",
+            borderRadius: 8,
+            padding: "10px 12px",
+            boxShadow: "0 2px 10px rgba(0,0,0,.35)",
+            maxWidth: 520,
+          }}
+        >
+          <div style={{fontWeight: 800, marginBottom: 6}}>
+            /api/ask status: {resStatus || "—"} {resError ? ` · ${resError}` : ""}
+          </div>
+          <div style={{fontSize: 13, marginBottom: 6, lineHeight: 1.35}}>
+            counts → members:{counts.members} · partnerships:{counts.partnerships} ·
+            transcripts:{counts.transcripts} · resources:{counts.resources} · events:{counts.events}
+          </div>
+          <details>
+            <summary style={{cursor:"pointer"}}>raw payload</summary>
+            <pre style={{maxHeight: 260, overflow: "auto", fontSize: 12, lineHeight: 1.25, marginTop: 8}}>
+{JSON.stringify(json, null, 2)}
+            </pre>
+          </details>
+        </div>
+      )}
 
       <div className="results-shell">
         {/* LEFT half */}
@@ -180,9 +225,12 @@ export default async function SearchPage({
             <MembersScroller scrollMode={membersScroll}>
               <ul className="members-list">
                 {(sections.members ?? []).slice(0, membersToShow).map((m, i) => {
-                  const name = m?.title || m?.name || m?.display_name || "Member";
-                  const industry = m?.industry || m?.role || m?.expertise || "";
-                  const quote = m?.quote || m?.line || m?.excerpt || m?.description || m?.context;
+                  const name =
+                    m?.title || m?.name || m?.display_name || "Member";
+                  const industry =
+                    m?.industry || m?.role || m?.expertise || "";
+                  const quote =
+                    m?.quote || m?.line || m?.excerpt || m?.description || m?.context;
                   return (
                     <li key={`member-${i}`} className="member-card member-card--clean">
                       <div className="member-head">
@@ -197,20 +245,12 @@ export default async function SearchPage({
             </MembersScroller>
 
             {/* Load more (visible when there are additional members) */}
-            {!membersScroll && (sections.members?.length ?? 0) > MEMBERS_INITIAL ? (
+            {!membersScroll && counts.members > MEMBERS_INITIAL ? (
               <div className="load-more-row">
                 <Link href={moreMembersHref} className="load-more-btn">LOAD MORE</Link>
               </div>
             ) : null}
           </div>
-
-          {/* Optional inline debug */}
-          {debugFlag && (
-            <div style={{marginTop:20, fontSize:12, opacity:.75}}>
-              <div>DEBUG: status={resStatus}</div>
-              <div>members={sections.members?.length ?? 0}, partnerships={sections.partnerships?.length ?? 0}, transcripts={sections.transcripts?.length ?? 0}, resources={sections.resources?.length ?? 0}, events={sections.events?.length ?? 0}</div>
-            </div>
-          )}
         </section>
 
         {/* RIGHT half (open preview; Load more → scroll) */}
@@ -221,7 +261,7 @@ export default async function SearchPage({
             items={sections.partnerships ?? []}
             count={nPartnerships}
             scroll={scrollMode.partnerships}
-            moreHref={moreHref.partnerships}
+            moreHref={withParam("np", nPartnerships + 3)}
           />
           <RightSection
             id="nt"
@@ -229,7 +269,7 @@ export default async function SearchPage({
             items={sections.transcripts ?? []}
             count={nTranscripts}
             scroll={scrollMode.transcripts}
-            moreHref={moreHref.transcripts}
+            moreHref={withParam("nt", nTranscripts + 3)}
           />
           <RightSection
             id="nr"
@@ -237,7 +277,7 @@ export default async function SearchPage({
             items={sections.resources ?? []}
             count={nResources}
             scroll={scrollMode.resources}
-            moreHref={moreHref.resources}
+            moreHref={withParam("nr", nResources + 3)}
           />
           <RightSection
             id="ne"
@@ -245,17 +285,10 @@ export default async function SearchPage({
             items={sections.events ?? []}
             count={nEvents}
             scroll={scrollMode.events}
-            moreHref={moreHref.events}
+            moreHref={withParam("ne", nEvents + 3)}
           />
 
           <div className="other-footer">OTHER</div>
-
-          {/* page-level debug dump on the right (toggle with &debug=1) */}
-          {debugFlag && (
-            <pre style={{marginTop:20, maxHeight:240, overflow:'auto', fontSize:11, lineHeight:1.2, opacity:.75}}>
-{JSON.stringify(json, null, 2)}
-            </pre>
-          )}
         </aside>
       </div>
     </main>
