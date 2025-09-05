@@ -1,10 +1,12 @@
 // web/app/search/page.tsx
 import Link from "next/link";
 
+/* ------- server settings ------- */
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
+/* ------- types & helpers ------- */
 type RawAPI = {
   ok?: boolean;
   data?: any;
@@ -20,7 +22,6 @@ type Sections = {
   events: any[];
 };
 
-/* Parse either a structured payload or a ```json fenced block */
 function parseSections(data: any): Sections {
   const body = data?.data ?? data ?? {};
   const fence = (t: unknown) => {
@@ -30,6 +31,7 @@ function parseSections(data: any): Sections {
     try { return JSON.parse((m[1] || "").trim()); } catch { return null; }
   };
 
+  // structured shape
   if (body?.transcripts || body?.resources || body?.partnerships || body?.events || body?.community_chats) {
     return {
       members: body?.community_chats?.items ?? body?.community_chats ?? [],
@@ -40,6 +42,7 @@ function parseSections(data: any): Sections {
     };
   }
 
+  // fallback: fenced block
   const parsed = fence(body?.openai_response ?? body?.message);
   return {
     members: parsed?.community_chats?.items ?? [],
@@ -50,8 +53,44 @@ function parseSections(data: any): Sections {
   };
 }
 
+/* Small client helper: enable top fade only when scrolled */
+function MembersScroller({
+  children,
+  scrollMode,
+}: {
+  children: React.ReactNode;
+  scrollMode: boolean;
+}) {
+  "use client";
+  const ref = React.useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled] = React.useState(false);
+  React.useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const onScroll = () => setScrolled(el.scrollTop > 0);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+  return (
+    <div
+      ref={ref}
+      className={[
+        "members-scroll",
+        scrollMode ? "members-scroll--scroll" : "",
+        scrolled ? "members-scroll--topfade" : "",
+      ].join(" ")}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* Need React for the client widget */
+import * as React from "react";
+
+/* ------- page ------- */
 export default async function SearchPage({
-  // IMPORTANT: treat as plain object (not a Promise)
+  // IMPORTANT: treat as a plain object (do NOT Promise/await it)
   searchParams,
 }: {
   searchParams?: Record<string, string | string[] | undefined>;
@@ -59,7 +98,13 @@ export default async function SearchPage({
   const rawQ = searchParams?.q;
   const q = Array.isArray(rawQ) ? rawQ[0] : rawQ ?? "";
 
-  // ===== Right-side counts via query params (default preview = 1; +3 per click) =====
+  /* ===== LEFT: Members ===== */
+  const mParam = searchParams?.m;
+  const membersScroll = (Array.isArray(mParam) ? mParam[0] : mParam) === "all";
+  const MEMBERS_INITIAL = 4;
+  const membersToShow = membersScroll ? Number.MAX_SAFE_INTEGER : MEMBERS_INITIAL;
+
+  /* ===== RIGHT: counts (+3 per click) ===== */
   const numFrom = (k: string, def: number) => {
     const v = searchParams?.[k];
     const s = Array.isArray(v) ? v[0] : v;
@@ -71,7 +116,6 @@ export default async function SearchPage({
   const nResources    = numFrom("nr", 1);
   const nEvents       = numFrom("ne", 1);
 
-  // “scroll mode” for a given category begins after the first Load more (>= 4 items)
   const scrollMode = {
     partnerships: nPartnerships >= 4,
     transcripts:  nTranscripts  >= 4,
@@ -79,24 +123,21 @@ export default async function SearchPage({
     events:       nEvents       >= 4,
   };
 
-  // ===== Members (unchanged here – handled in previous chunk later if needed) =====
-  const LEFT_COUNT = 5; // keep your existing count for now
-
-  // Fetch results (same-origin)
+  // fetch (same-origin)
   let json: RawAPI | null = null;
   if (q) {
     try {
       const res = await fetch(`/api/ask?q=${encodeURIComponent(q)}`, { cache: "no-store" });
       try { json = (await res.json()) as RawAPI; }
-      catch { json = { ok: false, status: res.status, body: await res.text() } as any; }
+      catch { json = { ok:false, status:res.status, body:await res.text() } as any; }
     } catch {
-      json = { ok: false, error: "fetch failed" } as any;
+      json = { ok:false, error:"fetch failed" } as any;
     }
   }
   const sections = json ? parseSections(json) : { members: [], transcripts: [], resources: [], partnerships: [], events: [] };
 
-  // Build +3 links (preserve q and other counts)
-  const withParam = (key: string, val: number) => {
+  // Build +3 URLs (preserve all counts + q)
+  const withParam = (key: "np"|"nt"|"nr"|"ne", val: number) => {
     const sp = new URLSearchParams();
     sp.set("q", q);
     sp.set("np", String(nPartnerships));
@@ -106,7 +147,6 @@ export default async function SearchPage({
     sp.set(key, String(val));
     return `/search?${sp.toString()}#${key}`;
   };
-
   const moreHref = {
     partnerships: withParam("np", nPartnerships + 3),
     transcripts:  withParam("nt", nTranscripts + 3),
@@ -114,76 +154,62 @@ export default async function SearchPage({
     events:       withParam("ne", nEvents + 3),
   };
 
+  const moreMembersHref = `/search?${new URLSearchParams({ q, m: "all" }).toString()}#members`;
+
   return (
     <main className="results">
-      {/* Background like landing */}
       <div className="landing-wrap" aria-hidden="true" />
-
       <div className="results-shell">
-        {/* LEFT: Search + Members (unchanged markup) */}
+        {/* LEFT half */}
         <section className="results-left">
+          {/* Prompt: match home look, top=135 (via CSS) */}
           <form action="/search" method="get" className="results-search" role="search">
             <input
               name="q"
               defaultValue={q}
               placeholder="What’s your next move?"
-              className="input results-input"
+              className="results-input results-input--home"
               autoFocus
             />
           </form>
 
-          <div className="members-wrap">
+          {/* Members box */}
+          <div id="members" className={["members-box", membersScroll ? "members-box--expanded" : ""].join(" ")}>
+            {/* corner ticks motif */}
             <div className="members-title-row" aria-hidden="true">
               <span className="corner left" />
               <span className="corner right" />
             </div>
 
-            <h2 className="members-title">Members</h2>
+            <MembersScroller scrollMode={membersScroll}>
+              <ul className="members-list">
+                {(sections.members ?? []).slice(0, membersToShow).map((m, i) => {
+                  const name = m?.title || m?.name || m?.display_name || "Member";
+                  const industry = m?.industry || m?.role || m?.expertise || "";
+                  const quote = m?.quote || m?.line || m?.excerpt;
+                  return (
+                    <li key={`member-${i}`} className="member-card member-card--clean">
+                      <div className="member-head">
+                        <span className="member-name member-name--bold">{name}</span>
+                        {industry && (<><span className="sep">|</span><span className="member-meta member-meta--bold">{String(industry)}</span></>)}
+                      </div>
+                      {quote && <div className="member-quote">“{quote}”</div>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </MembersScroller>
 
-            {!sections?.members?.length && (
-              <p className="muted">Type a search above to see relevant members.</p>
-            )}
-
-            {!!sections?.members?.length && (
-              <>
-                <ul className="members-list">
-                  {(sections.members ?? []).slice(0, LEFT_COUNT).map((m, i) => {
-                    const name =
-                      m?.title || m?.name || m?.display_name || "Member";
-                    const quote = m?.quote || m?.line || m?.excerpt;
-                    const meta =
-                      m?.role || m?.industry || m?.expertise || m?.username || "";
-                    return (
-                      <li key={`member-${i}`} className="member-card">
-                        <div className="member-head">
-                          <span className="member-name">{name}</span>
-                          {meta && (
-                            <>
-                              <span className="sep">|</span>
-                              <span className="member-meta">{String(meta).toUpperCase()}</span>
-                            </>
-                          )}
-                        </div>
-                        {quote && <div className="member-quote">“{quote}”</div>}
-                        <div className="member-contact">CONTACT</div>
-                      </li>
-                    );
-                  })}
-                </ul>
-
-                {(sections.members ?? []).length > LEFT_COUNT && (
-                  <div className="load-more-row">
-                    <button className="load-more-btn" type="button" disabled>
-                      LOAD MORE
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
+            {/* Load more (before scroll mode) */}
+            {!membersScroll && (sections.members?.length ?? 0) > MEMBERS_INITIAL ? (
+              <div className="load-more-row">
+                <Link href={moreMembersHref} className="load-more-btn">LOAD MORE</Link>
+              </div>
+            ) : null}
           </div>
         </section>
 
-        {/* RIGHT: categories */}
+        {/* RIGHT half */}
         <aside className="results-right">
           <RightSection
             id="np"
@@ -225,11 +251,12 @@ export default async function SearchPage({
   );
 }
 
-/** Right-side section:
- *  - default: header 24px font; 125px gap to next section
- *  - open view: first asset 10px under header, indented 25px, then Load more
- *  - after Load more (count>=4): convert to scroll box (3 visible), gap to next = 25px
- */
+/* Right-side section
+   - default: 24px header; 125px gap to next
+   - open preview: first asset 10px below, indented 25px, then Load more
+   - after Load more (count>=4): scroll box, ~3 items visible, 20px gaps, fades; gap to next = 25px
+   - non-member assets get 85% grey 1px line 5px under title and 5px under sub
+*/
 function RightSection({
   id,
   label,
@@ -241,37 +268,14 @@ function RightSection({
   id: "np" | "nt" | "nr" | "ne";
   label: string;
   items: any[];
-  count: number;   // number of items to show (1 default, +3 per click)
-  scroll: boolean; // becomes true when count >= 4
+  count: number;
+  scroll: boolean;
   moreHref: string;
 }) {
   const all = items ?? [];
-  const open = true; // keep auto-open to show preview; you can flip to false if you prefer collapsed by default
+  const open = true;
   const shown = all.slice(0, Math.max(1, count));
   const hasMore = all.length > shown.length;
-
-  // Choose per-type label to render asset lines + quotes + separators
-  const render = (it: any) => {
-    const title = it?.title || it?.name || it?.display_name || "Untitled";
-    const sub =
-      it?.quote || it?.summary || it?.description || it?.context || "";
-    const url = it?.url;
-
-    return (
-      <div className="right-card-inner">
-        {url ? (
-          <a href={url} target="_blank" rel="noreferrer" className="right-card-title">
-            {title}
-          </a>
-        ) : (
-          <div className="right-card-title">{title}</div>
-        )}
-        <div className="asset-sep" />
-        {sub ? <div className="right-card-sub">“{sub}”</div> : null}
-        <div className="asset-sep" />
-      </div>
-    );
-  };
 
   return (
     <details className={["right-acc", scroll ? "right-acc--scroll" : ""].join(" ")} open={open} id={id}>
@@ -284,7 +288,7 @@ function RightSection({
         <ul className="right-list">
           {shown.map((it, i) => (
             <li key={`${label}-${i}`} className="right-card">
-              {render(it)}
+              <RightCard item={it} />
             </li>
           ))}
         </ul>
@@ -296,5 +300,23 @@ function RightSection({
         )}
       </div>
     </details>
+  );
+}
+
+function RightCard({ item }: { item: any }) {
+  const title = item?.title || item?.name || item?.display_name || "Untitled";
+  const sub = item?.quote || item?.summary || item?.description || item?.context;
+  const url = item?.url;
+  return (
+    <div className="right-card-inner">
+      {url ? (
+        <a href={url} target="_blank" rel="noreferrer" className="right-card-title">{title}</a>
+      ) : (
+        <div className="right-card-title">{title}</div>
+      )}
+      <div className="asset-sep" />
+      {sub ? <div className="right-card-sub">“{sub}”</div> : null}
+      <div className="asset-sep" />
+    </div>
   );
 }

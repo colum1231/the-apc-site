@@ -239,115 +239,380 @@ html, body {
 }
 
 
-/* ===== Search Results Layout (RIGHT COLUMN REWORK) ===== */
+/* ===== Landing (viewport-mapped) ===== */
+:root{
+  /* Input box smaller: reduce width and height by ~30% */
+  --input-width-vw: 29vw;      /* ~30% smaller than 41.667vw */
+  --input-height-vh: 5.185vh;  /* ~30% smaller than 7.407vh */
+
+  /* Provide defaults so var() usages below are valid */
+  --logo-top-vh: 120px;   /* center of logo near h274, tuned in px */
+  --input-top-vh: 435px;  /* top of input near h495, tuned in px */
+
+  --outline: #545454;
+  --hq-color: #272727;
+  --input-font: 18px;
+  --hq-font: 20px;
+}
+
+/* Global font */
+body, input, button, a { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+
+/* Full-bleed background */
+.landing-wrap{
+  position: fixed;
+  inset: 0;
+  display: block;
+  background: #000 url("/landing-bg.png") center / cover no-repeat;
+}
+
+/* We position elements directly in the viewport (no scaling). */
+.logo{
+  position: fixed;
+  top: var(--logo-top-vh);
+  left: 50%;
+  transform: translateX(-50%);
+  display: block;
+}
+
+/* Search */
+.search{
+  position: fixed;
+  top: var(--input-top-vh);
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--input-width-vw);
+  height: var(--input-height-vh);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.input{
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--outline);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--outline);
+  text-align: center;
+  font-size: var(--input-font);
+  outline: none;
+  padding: 0 28px;
+}
+.input::placeholder{ color: var(--outline); opacity: .9; }
+
+/* Bottom link (fixed to bottom center) */
+.hq{
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 28px;
+  font-size: var(--hq-font);
+  color: var(--hq-color);
+  opacity: 0.5;   /* 50% transparency */
+  text-decoration: none;
+}
+.hq:hover{
+  opacity: 0.8;   /* slightly stronger on hover */
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ====== DEBUG GRID (optional) ====== */
+.grid-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  display: none; /* enable by adding .debug to .stage */
+}
+.stage.debug .grid-overlay {
+  display: block;
+  background:
+    linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 100px 100px; /* grid every 100px */
+}
+
+/* Logo placement (explicit px override; keeps your current layout) */
+.logo {
+  position: fixed;
+  top: 120px;   /* center of logo at h274 */
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* HQ link at bottom (explicit px override) */
+.hq {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 28px;
+  font-size: 17px;
+  color: #272727;
+  opacity: 0.5;   /* 50% transparency */
+  text-decoration: none;
+}
+.hq:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Style the search box placeholder */
+.search input::placeholder {
+  font-size: 16px;
+  color: rgba(84, 84, 84, 0.6); /* dark grey (#545454) with ~40% more transparency */
+}
+
+/* Placeholder behavior */
+input::placeholder { opacity: 0.6; transition: opacity 0.2s ease; }
+input:focus::placeholder { opacity: 0; }
+
+/* === APC Landing (known-good) === */
+:root{
+  --outline: #545454;
+  --hq-color: #272727;
+}
+
+html, body { height: 100%; background: #000; }
+
+/* Full-bleed background image (optional) */
+.landing-wrap{
+  position: fixed;
+  inset: 0;
+  display: block;
+  background: #000 url("/landing-bg.png") center / cover no-repeat;
+}
+
+/* Logo centered horizontally, at 274px from top */
+.logo{
+  position: fixed;
+  top: 97.5px;     /* TOP edge */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: auto;
+}
+
+/* Search bar: centered, 350×42.5, outlined */
+.search{
+  position: fixed;
+  top: 400px;      /* top of box */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 350px;
+  height: 42.5px;
+  display: flex; align-items: center; justify-content: center;
+}
+.input{
+  width: 100%; height: 100%;
+  border: 2px solid var(--outline);
+  border-radius: 999px;
+  background: transparent; color: #373737;
+  text-align: center; font-size: 16.5px;
+  outline: none; padding: 0 28px;
+}
+.input::placeholder{ color: var(--outline); opacity: 0.6; transition: opacity .15s ease; }
+.input:focus::placeholder{ opacity: 0; }
+
+/* Bottom “Go to HQ” link */
+.hq{
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: 28px; font-size: 18px; color: var(--hq-color);
+  opacity: 0.5; text-decoration: none;
+}
+.hq:hover{ opacity: 0.8; text-decoration: underline; text-underline-offset: 3px; }
+
+/* Force the landing background to render from /public */
+html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fixed; }
+
+/* ===== Results Page VARS (scoped) ===== */
+:root{
+  --apc-text:#8b8989;
+
+  /* layout */
+  --center-gutter:110px;      /* 110px from true center & edges */
+  --shell-top:135px;          /* prompt offset from top */
+  --shell-bottom:110px;       /* bottom safe area */
+
+  /* members box */
+  --box-width:740px;
+  --box-pad:60px;
+  --corner-grey:#545454;
+  --corner-run:75px;
+
+  /* fades */
+  --fade:150px;               /* bottom fade (and top when scrolled) */
+}
+
+/* ===== Search Results Layout (scoped so landing stays unchanged) ===== */
 .results{
   min-height:100vh;
-  color:#8b8989;
+  color:var(--apc-text);
   position:relative;
-  background:#000;              /* keep landing bg visible via .landing-wrap */
+  background:transparent;        /* no black overlay on results */
 }
-.results .landing-wrap{ opacity:.22; }
+.results .landing-wrap{ opacity:1; } /* show landing image fully */
 
-/* two equal halves */
 .results-shell{
-  position:relative;
-  max-width:1200px;
+  max-width:1920px;
   margin:0 auto;
-  padding:70px 24px 80px;
+  padding:var(--shell-top) 0 var(--shell-bottom);
   display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:60px;
+  grid-template-columns:1fr 1fr; /* equal halves */
+  gap:0;                         /* invisible center divide */
 }
 
-/* LEFT column */
-.results-left{ position:relative; }
-.results-search{ display:flex; justify-content:center; margin-bottom:26px; }
-.results-input{
-  width:800px; height:80px; border:2px solid #545454; border-radius:999px;
-  background:transparent; color:#545454; text-align:center; font-size:18px; outline:none; padding:0 28px;
-}
-.results-input::placeholder{ color:#545454; opacity:.6; }
+/* 110px padding on both sides (from center & page edges) */
+.results-left{  padding:0 var(--center-gutter); }
+.results-right{ padding:0 var(--center-gutter); margin-top:15px; } /* +15px → first header ~150px */
 
-/* Members block (unchanged here) */
-.members-wrap{ margin-top:8px; }
-.members-title-row{ height:26px; position:relative; margin-bottom:6px; }
+/* Prompt — same as home */
+.results-search{ display:flex; justify-content:flex-start; }
+.results-input.results-input--home{
+  width:350px; height:42.5px;
+  border:2px solid #545454; border-radius:999px;
+  background:transparent; color:#373737;
+  text-align:center; font-size:16.5px; outline:none; padding:0 28px;
+}
+.results-input.results-input--home::placeholder{ color:#545454; opacity:.6; transition:opacity .15s ease; }
+.results-input.results-input--home:focus::placeholder{ opacity:0; }
+
+/* ===== Members Box ===== */
+.members-box{
+  position:relative;
+  width:var(--box-width);
+  margin:100px auto 0;             /* 100px below prompt */
+  padding:var(--box-pad);
+  background:transparent;
+  border:1px solid #000;           /* baseline black border */
+}
+/* top-corner grey runs (75px) */
+.members-box::before{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:
+    linear-gradient(var(--corner-grey),var(--corner-grey)) top left  / var(--corner-run) 1px no-repeat,
+    linear-gradient(var(--corner-grey),var(--corner-grey)) top right / var(--corner-run) 1px no-repeat,
+    linear-gradient(var(--corner-grey),var(--corner-grey)) top left  / 1px var(--corner-run) no-repeat,
+    linear-gradient(var(--corner-grey),var(--corner-grey)) top right / 1px var(--corner-run) no-repeat;
+}
+/* bottom corners turn grey only after Load more */
+.members-box::after{
+  content:""; position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .15s ease;
+  background:
+    linear-gradient(var(--corner-grey),var(--corner-grey)) bottom left  / var(--corner-run) 1px no-repeat,
+    linear-gradient(var(--corner-grey),var(--corner-grey)) bottom right / var(--corner-run) 1px no-repeat,
+    linear-gradient(var(--corner-grey),var(--corner-grey)) bottom left  / 1px var(--corner-run) no-repeat,
+    linear-gradient(var(--corner-grey),var(--corner-grey)) bottom right / 1px var(--corner-run) no-repeat;
+}
+.members-box--expanded::after{ opacity:1; }
+
+/* Corner ticks bar */
+.members-title-row{ height:26px; position:relative; margin-bottom:12px; }
 .members-title-row .corner{
-  position:absolute; top:0; width:46px; height:26px; border-top:2px solid #545454; border-left:2px solid #545454; opacity:.6;
+  position:absolute; top:0; width:46px; height:26px;
+  border-top:2px solid var(--corner-grey); border-left:2px solid var(--corner-grey); opacity:.6;
 }
-.members-title-row .corner.right{ right:0; left:auto; border-left:0; border-right:2px solid #545454; }
-.members-title{ font-size:18px; letter-spacing:.04em; margin:0 0 6px 0; color:#8b8989; }
-.members-list{ display:flex; flex-direction:column; gap:20px; }
-.member-card{ border-bottom:1px solid rgba(84,84,84,.6); padding-bottom:14px; }
-.member-head{ display:flex; align-items:baseline; gap:12px; }
-.member-name{ font-size:20px; color:#8b8989; }
-.member-meta{ font-size:16px; letter-spacing:.06em; color:#8b8989; opacity:.75; }
-.member-quote{ margin-top:8px; font-style:italic; color:#8b8989; opacity:.9; }
-.member-contact{ margin-top:6px; font-weight:600; letter-spacing:.06em; color:#8b8989; }
-.load-more-row{ margin-top:14px; }
-.load-more-btn{ background:none; border:none; color:#8b8989; font-weight:700; letter-spacing:.06em; opacity:.75; cursor:not-allowed; }
+.members-title-row .corner.right{ right:0; left:auto; border-left:0; border-right:2px solid var(--corner-grey); }
 
-/* RIGHT column — first header 150px from top (shell pad is 135px) → +15px */
-.results-right{ position:relative; padding-left:8px; margin-top:15px; }
+/* Members list — clean (no bullets/dividers/handles/contact) */
+.members-list{ list-style:none; padding-left:0; display:flex; flex-direction:column; gap:18px; }
+.member-card.member-card--clean{ border:none; padding:0; }
+.member-head{ display:flex; align-items:baseline; gap:10px; }
+.member-name{ font-size:16px; color:#8b8989; font-weight:700; }
+.member-meta{ font-size:16px; color:#7a7a7a; font-weight:700; } /* darker grey */
+.sep{ opacity:.55; }
+.member-quote{ margin-top:6px; font-style:italic; color:#8b8989; }
 
-/* Header row: font 24px; default spacing to next header = 125px */
+/* Members scroll — bottom fade always; top fade only when scrolled */
+.members-scroll{ position:relative; }
+.members-scroll--scroll{
+  max-height: calc(100vh - var(--shell-top) - 42.5px - 100px - var(--shell-bottom) - (var(--box-pad)*2));
+  overflow:auto; padding-right:6px;
+  -webkit-mask-image: linear-gradient(to bottom,
+    rgba(0,0,0,1) 0px,
+    rgba(0,0,0,1) calc(100% - var(--fade)),
+    rgba(0,0,0,0) 100%);
+  mask-image: linear-gradient(to bottom,
+    rgba(0,0,0,1) 0px,
+    rgba(0,0,0,1) calc(100% - var(--fade)),
+    rgba(0,0,0,0) 100%);
+}
+.members-scroll--scroll.members-scroll--topfade{
+  -webkit-mask-image: linear-gradient(to bottom,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,1) var(--fade),
+    rgba(0,0,0,1) calc(100% - var(--fade)),
+    rgba(0,0,0,0) 100%);
+  mask-image: linear-gradient(to bottom,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,1) var(--fade),
+    rgba(0,0,0,1) calc(100% - var(--fade)),
+    rgba(0,0,0,0) 100%);
+}
+
+/* Load more (like OTHER) + subtle spinner behind */
+.load-more-row{ margin-top:16px; display:flex; justify-content:center; }
+.load-more-btn{
+  position:relative; display:inline-block; text-decoration:none;
+  font-weight:800; letter-spacing:.06em; color:#8b8989; padding:.25rem .5rem;
+}
+.load-more-btn::after{
+  content:""; position:absolute; left:50%; top:50%; width:1.5em; height:1.5em; transform:translate(-50%,-50%);
+  border:2px solid rgba(139,137,137,.12); border-top-color:rgba(139,137,137,.28);
+  border-radius:50%; animation: spin 1.1s linear infinite; z-index:-1;
+}
+@keyframes spin{ to{ transform:translate(-50%,-50%) rotate(360deg); } }
+
+/* ===== Right column ===== */
 .right-acc{
-  border:0;                      /* divider lines invisible by default */
-  margin-bottom:125px;           /* default spacing */
+  border:0;                     /* invisible lines by default */
+  margin-bottom:125px;          /* default spacing between headers */
 }
-.right-acc--scroll{              /* after Load more, spacing shrinks */
-  margin-bottom:25px;
-}
+.right-acc--scroll{ margin-bottom:25px; } /* after Load more */
+
 .right-head{
   display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 2px;
 }
 .right-title{
-  font-size:24px;                /* ↑ from 20px */
+  font-size:24px;               /* per spec */
   font-weight:800; letter-spacing:.06em; color:#8b8989;
 }
 .right-arrow{ color:#8b8989; opacity:.85; transform:translateY(-1px); }
 .right-acc[open] .right-arrow{ transform:rotate(90deg); }
 
-/* Open body: first asset 10px below header, indented 25px */
+/* Open body: first asset 10px below, indented 25px */
 .right-body{ padding:10px 2px 0 2px; }
 .right-list{
   list-style:none; padding:0; margin:0;
   display:flex; flex-direction:column;
-  gap:20px;                       /* 20px between assets */
-  padding-left:25px;              /* indent 25px */
+  gap:20px;                      /* 20px between assets */
+  padding-left:25px;             /* indent 25px */
 }
 
-/* Scroll mode (after first Load more: count>=4)
-   - make it a scroll box that shows about 3 assets
-   - apply top/bottom fade similar to members */
+/* Scroll mode (after first Load more: count>=4) */
 .right-body--scroll{
-  max-height:420px;               /* fits ~3 asset blocks; tweak if desired */
+  max-height:420px;              /* ~3 assets visible; adjust if needed */
   overflow:auto;
   padding-right:6px;
   -webkit-mask-image: linear-gradient(to bottom,
     rgba(0,0,0,1) 0px,
-    rgba(0,0,0,1) calc(100% - 150px),
+    rgba(0,0,0,1) calc(100% - var(--fade)),
     rgba(0,0,0,0) 100%);
   mask-image: linear-gradient(to bottom,
     rgba(0,0,0,1) 0px,
-    rgba(0,0,0,1) calc(100% - 150px),
+    rgba(0,0,0,1) calc(100% - var(--fade)),
     rgba(0,0,0,0) 100%);
 }
-.right-body--scroll::before{
-  /* top-fade hint; only visible once you scroll, handled by mask gradient start */
-  content:"";
-}
 
-/* Asset text + separators (non-members only, i.e., right side) */
-.right-card-title{
-  font-size:16px; color:#8b8989; text-decoration:none;
-}
+/* Asset text + separators (non-members) */
+.right-card-title{ font-size:16px; color:#8b8989; text-decoration:none; }
 .right-card-title:hover{ text-decoration:underline; }
 .right-card-sub{ font-size:14px; opacity:.85; }
-.asset-sep{
-  height:1px; background:rgba(139,137,137,.85); margin:5px 0;
-}
+.asset-sep{ height:1px; background:rgba(139,137,137,.85); margin:5px 0; }
 
-/* Load more button under list (active), similar tone to OTHER */
+/* Right “Load more” (active) */
 .right-load-more-row{ margin-top:10px; padding-left:25px; }
 .right-load-more{
   color:#8b8989; text-decoration:none; font-weight:700; letter-spacing:.06em; position:relative; padding:.2rem .35rem;
@@ -357,20 +622,19 @@ html, body {
   border:2px solid rgba(139,137,137,.12); border-top-color:rgba(139,137,137,.28); border-radius:50%;
   animation: spin 1.1s linear infinite; z-index:-1;
 }
-@keyframes spin{ to{ transform:translate(-50%,-50%) rotate(360deg); } }
 
-/* OTHER footer: centered; divider 20px above */
+/* OTHER footer centered, with divider 20px above */
 .other-footer{
-  margin-top:32px; font-weight:800; letter-spacing:.06em; color:#8b8989; text-align:center;
-  position:relative;
+  margin-top:32px; font-weight:800; letter-spacing:.06em; color:#8b8989; text-align:center; position:relative;
 }
 .other-footer::before{
   content:""; position:absolute; left:10%; right:10%; height:1px; background:#3a3a3a; top:-20px;
 }
 
-/* Small screens */
-@media (max-width:1000px){
-  .results-shell{ grid-template-columns:1fr; gap:36px; }
-  .results-right{ padding-left:0; margin-top:0; }
-  .results-input{ width:min(800px,96%); }
+/* Stack on smaller screens */
+@media (max-width:1200px){
+  .results-shell{ grid-template-columns:1fr; }
+  .results-left, .results-right{ padding:0 24px; }
+  .results-right{ margin-top:0; }
+  .results-input.results-input--home{ width:min(800px,96%); }
 }
