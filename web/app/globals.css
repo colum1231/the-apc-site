@@ -686,3 +686,76 @@ html, body { background: #000 url("/landing-bg.png") center / cover no-repeat fi
   .results-right{ margin-top:0; }
   .results-input.results-input--home{ width:min(800px,96%); }
 }
+
+/* =========================
+   === RESULTS OVERRIDES ===
+   (Added — nothing removed above)
+   ========================= */
+
+/* Page itself never scrolls; only boxes can scroll after “Load more” */
+.results {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Members box: black border → transparent; keep grey corner runs */
+.members-box {
+  border: 1px solid transparent;
+}
+/* ensure grey corners render (top always; bottom only when expanded) */
+.members-box::before {
+  background:
+    linear-gradient(var(--corner-grey),var(--corner-grey)) top left  / var(--corner-run) 1px no-repeat,
+    linear-gradient(var(--corner-grey),var(--corner-grey)) top right / var(--corner-run) 1px no-repeat,
+    linear-gradient(var(--corner-grey),var(--corner-grey)) top left  / 1px var(--corner-run) no-repeat,
+    linear-gradient(var(--corner-grey),var(--corner-grey)) top right / 1px var(--corner-run) no-repeat;
+}
+.members-box::after {
+  background:
+    linear-gradient(var(--corner-grey),var(--corner-grey)) bottom left  / var(--corner-run) 1px no-repeat,
+    linear-gradient(var(--corner-grey),var(--corner-grey)) bottom right / var(--corner-run) 1px no-repeat,
+    linear-gradient(var(--corner-grey),var(--corner-grey)) bottom left  / 1px var(--corner-run) no-repeat,
+    linear-gradient(var(--corner-grey),var(--corner-grey)) bottom right / 1px var(--corner-run) no-repeat;
+}
+
+/* Members scroll max-height: calculated to respect 110px bottom safe area */
+.members-scroll--scroll{
+  max-height: calc(100vh - var(--shell-top) - 42.5px - 100px - var(--shell-bottom) - (var(--box-pad)*2));
+  overflow: auto;
+  padding-right: 6px;
+  -webkit-mask-image: linear-gradient(to bottom,
+    rgba(0,0,0,1) 0px,
+    rgba(0,0,0,1) calc(100% - var(--fade)),
+    rgba(0,0,0,0) 100%);
+  mask-image: linear-gradient(to bottom,
+    rgba(0,0,0,1) 0px,
+    rgba(0,0,0,1) calc(100% - var(--fade)),
+    rgba(0,0,0,0) 100%);
+}
+.members-scroll--scroll.members-scroll--topfade{
+  -webkit-mask-image: linear-gradient(to bottom,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,1) var(--fade),
+    rgba(0,0,0,1) calc(100% - var(--fade)),
+    rgba(0,0,0,0) 100%);
+  mask-image: linear-gradient(to bottom,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,1) var(--fade),
+    rgba(0,0,0,1) calc(100% - var(--fade)),
+    rgba(0,0,0,0) 100%);
+}
+
+/* Right-side scroll box height (≈ 3 assets), same fade treatment */
+.right-body--scroll{
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 6px;
+  -webkit-mask-image: linear-gradient(to bottom,
+    rgba(0,0,0,1) 0px,
+    rgba(0,0,0,1) calc(100% - var(--fade)),
+    rgba(0,0,0,0) 100%);
+  mask-image: linear-gradient(to bottom,
+    rgba(0,0,0,1) 0px,
+    rgba(0,0,0,1) calc(100% - var(--fade)),
+    rgba(0,0,0,0) 100%);
+}
