@@ -11,15 +11,27 @@ export default function SearchPage({
   searchParams?: Record<string, string | string[] | undefined>;
 }) {
   const sp = searchParams ?? {};
-  const rawQ = sp.q;
-  const q = Array.isArray(rawQ) ? rawQ[0] : rawQ ?? "";
-  const rawM = sp.m;
-  const m = Array.isArray(rawM) ? rawM[0] : rawM;
-  const membersScroll = m === "all"; // only scroll after "Load more"
+  const get = (k: string) => {
+    const v = (sp as any)[k];
+    return Array.isArray(v) ? v[0] : v;
+  };
+
+  const q = get("q") ?? "";
+  const m = get("m");           // members scroll toggle
+  const np = get("np");         // partnerships scroll toggle
+  const nt = get("nt");         // transcripts scroll toggle
+  const nr = get("nr");         // resources scroll toggle
+  const ne = get("ne");         // events scroll toggle
+
+  const membersScroll = m === "all";
+  const npScroll = np === "all";
+  const ntScroll = nt === "all";
+  const nrScroll = nr === "all";
+  const neScroll = ne === "all";
 
   return (
     <main className="results">
-      {/* landing background image behind content */}
+      {/* background from landing, behind content */}
       <div className="landing-wrap" aria-hidden="true" />
 
       <div className="results-shell">
@@ -36,12 +48,11 @@ export default function SearchPage({
             />
           </form>
 
-          {/* MEMBERS BOX */}
+          {/* MEMBERS BOX (unchanged from last step) */}
           <div
             id="members"
             className={`members-box ${membersScroll ? "members-box--scroll" : ""}`}
           >
-            {/* small corner ticks motif on the real box only */}
             <div className="members-title-row" aria-hidden="true">
               <span className="corner left" />
               <span className="corner right" />
@@ -85,7 +96,7 @@ export default function SearchPage({
             </div>
           </div>
 
-          {/* Load more CTA: toggles scroll via ?m=all and stays ~170px from bottom */}
+          {/* Members Load more (enables scroll via ?m=all) */}
           {!membersScroll && (
             <div className="load-more-row load-more-row--members">
               <Link
@@ -100,13 +111,13 @@ export default function SearchPage({
 
         {/* ================= RIGHT HALF ================= */}
         <aside className="results-right">
-          {/* Closed by default; headings only until clicked */}
-          <details className="right-acc" id="np">
+          {/* PARTNERSHIPS */}
+          <details className={`right-acc ${npScroll ? "right-acc--scroll" : ""}`} id="np">
             <summary className="right-head">
               <span className="right-title">PARTNERSHIPS</span>
               <span className="right-arrow" aria-hidden>▸</span>
             </summary>
-            <div className="right-body">
+            <div className={`right-body ${npScroll ? "right-body--scroll" : ""}`}>
               <ul className="right-list">
                 <li className="right-card">
                   <div className="right-card-inner">
@@ -114,19 +125,43 @@ export default function SearchPage({
                     <div className="right-card-sub">“Specializes in recruiting setters for remote sales teams.”</div>
                   </div>
                 </li>
+                {npScroll && (
+                  <>
+                    <li className="right-card">
+                      <div className="right-card-inner">
+                        <div className="right-card-title">TopCloser</div>
+                        <div className="right-card-sub">“Commission-only setter placement at scale.”</div>
+                      </div>
+                    </li>
+                    <li className="right-card">
+                      <div className="right-card-inner">
+                        <div className="right-card-title">RevForge</div>
+                        <div className="right-card-sub">“On-demand interview pipeline for outbound teams.”</div>
+                      </div>
+                    </li>
+                  </>
+                )}
               </ul>
-              <div className="right-load-more-row">
-                <Link href={`/search?${new URLSearchParams({ q: q || "test", np: "4" }).toString()}`} className="right-load-more">Load more</Link>
-              </div>
+              {!npScroll && (
+                <div className="right-load-more-row">
+                  <Link
+                    href={`/search?${new URLSearchParams({ q: q || "test", np: "all" }).toString()}`}
+                    className="right-load-more"
+                  >
+                    Load more
+                  </Link>
+                </div>
+              )}
             </div>
           </details>
 
-          <details className="right-acc" id="nt">
+          {/* CALL LIBRARY */}
+          <details className={`right-acc ${ntScroll ? "right-acc--scroll" : ""}`} id="nt">
             <summary className="right-head">
               <span className="right-title">CALL LIBRARY</span>
               <span className="right-arrow" aria-hidden>▸</span>
             </summary>
-            <div className="right-body">
+            <div className={`right-body ${ntScroll ? "right-body--scroll" : ""}`}>
               <ul className="right-list">
                 <li className="right-card">
                   <div className="right-card-inner">
@@ -134,19 +169,43 @@ export default function SearchPage({
                     <div className="right-card-sub">“The main bottleneck is actually talent acquisition.”</div>
                   </div>
                 </li>
+                {ntScroll && (
+                  <>
+                    <li className="right-card">
+                      <div className="right-card-inner">
+                        <div className="right-card-title">Outbound Roundtable</div>
+                        <div className="right-card-sub">“How to systemize referrals for volume.”</div>
+                      </div>
+                    </li>
+                    <li className="right-card">
+                      <div className="right-card-inner">
+                        <div className="right-card-title">Setter Hiring Q&A</div>
+                        <div className="right-card-sub">“Traits we filter for in the first pass.”</div>
+                      </div>
+                    </li>
+                  </>
+                )}
               </ul>
-              <div className="right-load-more-row">
-                <Link href={`/search?${new URLSearchParams({ q: q || "test", nt: "4" }).toString()}`} className="right-load-more">Load more</Link>
-              </div>
+              {!ntScroll && (
+                <div className="right-load-more-row">
+                  <Link
+                    href={`/search?${new URLSearchParams({ q: q || "test", nt: "all" }).toString()}`}
+                    className="right-load-more"
+                  >
+                    Load more
+                  </Link>
+                </div>
+              )}
             </div>
           </details>
 
-          <details className="right-acc" id="nr">
+          {/* RESOURCES */}
+          <details className={`right-acc ${nrScroll ? "right-acc--scroll" : ""}`} id="nr">
             <summary className="right-head">
               <span className="right-title">RESOURCES</span>
               <span className="right-arrow" aria-hidden>▸</span>
             </summary>
-            <div className="right-body">
+            <div className={`right-body ${nrScroll ? "right-body--scroll" : ""}`}>
               <ul className="right-list">
                 <li className="right-card">
                   <div className="right-card-inner">
@@ -154,19 +213,43 @@ export default function SearchPage({
                     <div className="right-card-sub">“A one-pager to standardize setter interviews.”</div>
                   </div>
                 </li>
+                {nrScroll && (
+                  <>
+                    <li className="right-card">
+                      <div className="right-card-inner">
+                        <div className="right-card-title">Referral Script Pack</div>
+                        <div className="right-card-sub">“Short templates for warm intros.”</div>
+                      </div>
+                    </li>
+                    <li className="right-card">
+                      <div className="right-card-inner">
+                        <div className="right-card-title">Scorecard Rubric</div>
+                        <div className="right-card-sub">“Calibrate panel feedback quickly.”</div>
+                      </div>
+                    </li>
+                  </>
+                )}
               </ul>
-              <div className="right-load-more-row">
-                <Link href={`/search?${new URLSearchParams({ q: q || "test", nr: "4" }).toString()}`} className="right-load-more">Load more</Link>
-              </div>
+              {!nrScroll && (
+                <div className="right-load-more-row">
+                  <Link
+                    href={`/search?${new URLSearchParams({ q: q || "test", nr: "all" }).toString()}`}
+                    className="right-load-more"
+                  >
+                    Load more
+                  </Link>
+                </div>
+              )}
             </div>
           </details>
 
-          <details className="right-acc" id="ne">
+          {/* EVENTS */}
+          <details className={`right-acc ${neScroll ? "right-acc--scroll" : ""}`} id="ne">
             <summary className="right-head">
               <span className="right-title">EVENTS</span>
               <span className="right-arrow" aria-hidden>▸</span>
             </summary>
-            <div className="right-body">
+            <div className={`right-body ${neScroll ? "right-body--scroll" : ""}`}>
               <ul className="right-list">
                 <li className="right-card">
                   <div className="right-card-inner">
@@ -174,10 +257,33 @@ export default function SearchPage({
                     <div className="right-card-sub">“NYC · Oct 15”</div>
                   </div>
                 </li>
+                {neScroll && (
+                  <>
+                    <li className="right-card">
+                      <div className="right-card-inner">
+                        <div className="right-card-title">APC Open House</div>
+                        <div className="right-card-sub">“SF · Nov 3”</div>
+                      </div>
+                    </li>
+                    <li className="right-card">
+                      <div className="right-card-inner">
+                        <div className="right-card-title">Setter Sprint</div>
+                        <div className="right-card-sub">“Remote · Dec 2–6”</div>
+                      </div>
+                    </li>
+                  </>
+                )}
               </ul>
-              <div className="right-load-more-row">
-                <Link href={`/search?${new URLSearchParams({ q: q || "test", ne: "4" }).toString()}`} className="right-load-more">Load more</Link>
-              </div>
+              {!neScroll && (
+                <div className="right-load-more-row">
+                  <Link
+                    href={`/search?${new URLSearchParams({ q: q || "test", ne: "all" }).toString()}`}
+                    className="right-load-more"
+                  >
+                    Load more
+                  </Link>
+                </div>
+              )}
             </div>
           </details>
 
