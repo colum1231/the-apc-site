@@ -1,79 +1,136 @@
-/* === Landing (keep your existing look) ================================== */
+/* =========================
+   Base + Landing (kept)
+   ========================= */
 :root{
   --outline:#545454;
   --hq-color:#272727;
   --apc-text:#8b8989;
 
+  /* Landing tuning */
+  --input-width-vw:29vw;
+  --input-height-vh:5.185vh;
+  --logo-top-vh:120px;
+  --input-top-vh:435px;
+
   /* Results layout variables */
-  --center-gutter:110px;     /* padding from center & edges */
-  --shell-top:135px;         /* prompt offset from top */
-  --shell-bottom:110px;      /* bottom safe area */
-  --box-width:740px;         /* 960 - 110 - 110 */
-  --box-pad:60px;
-  --corner-grey:#545454;
-  --corner-run:75px;
-  --fade:150px;
+  --center-gutter:110px;   /* 110px from center and edges */
+  --shell-top:135px;       /* search offset from top on results */
+  --shell-bottom:110px;    /* bottom safe area on results */
+  --box-width:740px;       /* members content width */
+  --box-pad:60px;          /* inner padding for members box */
+  --corner-grey:#545454;   /* subtle grey */
+  --corner-run:75px;       /* length of grey corner ticks */
+  --fade:150px;            /* fade distance for scroll masks */
 }
 
-/* Background image for both landing & results */
-html, body { height:100%; background:#000 url("/landing-bg.png") center / cover no-repeat fixed; }
-body, input, button, a { font-family:"Helvetica Neue", Helvetica, Arial, sans-serif; }
+/* Global font */
+body, input, button, a { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
 
-/* Landing pieces */
-.landing-wrap{ position:fixed; inset:0; display:block; background:transparent; }
-.logo{ position:fixed; top:97.5px; left:50%; transform:translateX(-50%); width:120px; height:auto; }
+/* Background image for all pages (landing + results) */
+html, body{
+  height:100%;
+  background:#000 url("/landing-bg.png") center / cover no-repeat fixed;
+}
 
-.search{ position:fixed; top:400px; left:50%; transform:translateX(-50%); width:350px; height:42.5px; display:flex; align-items:center; justify-content:center; }
-.input{ width:100%; height:100%; border:2px solid var(--outline); border-radius:999px; background:transparent; color:#373737; text-align:center; font-size:16.5px; outline:none; padding:0 28px; }
+/* ----- Landing elements (unchanged look) ----- */
+.landing-wrap{ position:fixed; inset:0; background:transparent; }
+
+.logo{
+  position:fixed; top:97.5px; left:50%; transform:translateX(-50%);
+  width:120px; height:auto;
+}
+.search{
+  position:fixed; top:400px; left:50%; transform:translateX(-50%);
+  width:350px; height:42.5px; display:flex; align-items:center; justify-content:center;
+}
+.input{
+  width:100%; height:100%;
+  border:2px solid var(--outline); border-radius:999px;
+  background:transparent; color:#373737; text-align:center; font-size:16.5px;
+  outline:none; padding:0 28px;
+}
 .input::placeholder{ color:var(--outline); opacity:.6; transition:opacity .15s ease; }
 .input:focus::placeholder{ opacity:0; }
 
-.hq{ position:fixed; left:50%; transform:translateX(-50%); bottom:28px; font-size:18px; color:var(--hq-color); opacity:.5; text-decoration:none; }
+.hq{
+  position:fixed; left:50%; transform:translateX(-50%);
+  bottom:28px; font-size:18px; color:var(--hq-color);
+  opacity:.5; text-decoration:none;
+}
 .hq:hover{ opacity:.8; text-decoration:underline; text-underline-offset:3px; }
 
-/* === RESULTS PAGE ======================================================= */
-.results{ min-height:100vh; color:var(--apc-text); position:relative; background:transparent; overflow:hidden; }
+/* =========================
+   RESULTS PAGE LAYOUT
+   ========================= */
+.results{
+  position:relative;
+  height:100vh;             /* page never scrolls */
+  overflow:hidden;          /* prevent page scroll; inner boxes will scroll when needed */
+  color:var(--apc-text);
+  background:transparent;   /* no black overlay on bg */
+}
+
+/* Two equal halves + centered container */
 .results-shell{
-  /* EXACT 50/50 halves on a 1920 canvas */
-  max-width:1920px; width:100%;
+  position:relative;
+  width:min(1920px, 100vw);         /* 1920 canvas, shrink on smaller screens */
+  height:100%;
   margin:0 auto;
   padding:var(--shell-top) 0 var(--shell-bottom);
-  display:grid; grid-template-columns:1fr 1fr; gap:0;
+  display:grid;
+  grid-template-columns:50% 50%;    /* true 50/50 split */
+  align-items:start;
+  justify-items:stretch;
 }
 
-/* Content padding inside each half: 110px from center & edges */
-.results-left, .results-right{ padding:0 var(--center-gutter); }
+/* 110px padding from center AND from outside edge for both halves */
+.results-left,
+.results-right{
+  padding-left:var(--center-gutter);
+  padding-right:var(--center-gutter);
+  box-sizing:border-box;
+}
 
-/* Left: prompt at the top */
-.results-search{ display:flex; justify-content:flex-start; }
-.results-input.results-input--home{
+/* RESULTS: search box on left (same look as home) */
+.results-search{
+  display:flex; justify-content:flex-start; align-items:center;
+}
+.results-input{
   width:350px; height:42.5px;
   border:2px solid var(--outline); border-radius:999px;
-  background:transparent; color:#373737; text-align:center; font-size:16.5px; outline:none; padding:0 28px;
+  background:transparent; color:#373737; text-align:center; font-size:16.5px;
+  outline:none; padding:0 28px;
 }
-.results-input.results-input--home::placeholder{ color:var(--outline); opacity:.6; transition:opacity .15s ease; }
-.results-input.results-input--home:focus::placeholder{ opacity:0; }
+.results-input::placeholder{ color:var(--outline); opacity:.6; transition:opacity .15s ease; }
+.results-input:focus::placeholder{ opacity:0; }
 
-/* ================= Members box (single outline only) ==================== */
+/* =========================
+   MEMBERS BOX (left column)
+   ========================= */
+/* Wrapper to center the content block under the search */
 .members-box{
   position:relative;
   width:var(--box-width);
-  margin:100px auto 0;                 /* 100px below prompt */
+  margin:100px auto 0;                 /* 100px space below search */
   padding:var(--box-pad);
   background:transparent;
-  border:1px solid #000;               /* baseline black (transparent via bg) */
+  border:none !important;              /* remove ANY outer/black lines */
 }
 
-/* Thin grey corner outline (top corners always) */
+/* Single set of subtle grey “corner ticks” at the TOP only */
 .members-box::before{
   content:""; position:absolute; inset:0; pointer-events:none;
   background:
+    /* top horizontal ticks */
     linear-gradient(var(--corner-grey),var(--corner-grey)) top left  / var(--corner-run) 1px no-repeat,
     linear-gradient(var(--corner-grey),var(--corner-grey)) top right / var(--corner-run) 1px no-repeat,
+    /* top vertical ticks */
     linear-gradient(var(--corner-grey),var(--corner-grey)) top left  / 1px var(--corner-run) no-repeat,
     linear-gradient(var(--corner-grey),var(--corner-grey)) top right / 1px var(--corner-run) no-repeat;
+  opacity:.6;
 }
-/* Bottom corners appear only after "Load more" */
+
+/* Bottom corner ticks are hidden until the list expands via Load more */
 .members-box::after{
   content:""; position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .15s ease;
   background:
@@ -84,46 +141,48 @@ body, input, button, a { font-family:"Helvetica Neue", Helvetica, Arial, sans-se
 }
 .members-box--expanded::after{ opacity:1; }
 
-/* remove any old "outer corner" decorations completely */
-.corner, .corner--left, .corner--right { display:none !important; }
-
-/* Members list visuals */
+/* Members list (clean — no bullets / no extra divider) */
 .members-list{ list-style:none; padding-left:0; display:flex; flex-direction:column; gap:18px; }
-.member-card{ padding:0; border:none; }
-.member-head{ display:flex; align-items:baseline; gap:10px; }
-.member-name{ font-size:16px; color:var(--apc-text); font-weight:700; }
-.member-meta{ font-size:16px; color:#7a7a7a; font-weight:700; }
-.sep{ opacity:.55; }
+.member-card{ border:none; padding:0; }
+.member-head{ display:flex; gap:10px; align-items:baseline; }
+.member-name{ font-weight:800; color:var(--apc-text); }
+.member-meta{ font-weight:800; color:#7a7a7a; }
 .member-quote{ margin-top:6px; font-style:italic; color:var(--apc-text); }
+.sep{ opacity:.55; }
 
-/* Members scroll (becomes active after "Load more") */
-.members-scroll{ position:relative; }
+/* Scroll behavior – only when “Load more” is triggered in JS */
+.members-scroll{
+  position:relative;
+  /* When scroll is active we apply a bottom fade; default is not scrollable */
+}
 .members-scroll--scroll{
   max-height: calc(100vh - var(--shell-top) - 42.5px - 100px - var(--shell-bottom) - (var(--box-pad)*2));
-  overflow:auto; padding-right:6px;
+  overflow:auto;
+  padding-right:6px;
   -webkit-mask-image: linear-gradient(to bottom,
     rgba(0,0,0,1) 0px,
     rgba(0,0,0,1) calc(100% - var(--fade)),
     rgba(0,0,0,0) 100%);
-          mask-image: linear-gradient(to bottom,
+  mask-image: linear-gradient(to bottom,
     rgba(0,0,0,1) 0px,
     rgba(0,0,0,1) calc(100% - var(--fade)),
     rgba(0,0,0,0) 100%);
 }
+/* Add top fade when the user has scrolled down */
 .members-scroll--scroll.members-scroll--topfade{
   -webkit-mask-image: linear-gradient(to bottom,
     rgba(0,0,0,0) 0px,
     rgba(0,0,0,1) var(--fade),
     rgba(0,0,0,1) calc(100% - var(--fade)),
     rgba(0,0,0,0) 100%);
-          mask-image: linear-gradient(to bottom,
+  mask-image: linear-gradient(to bottom,
     rgba(0,0,0,0) 0px,
     rgba(0,0,0,1) var(--fade),
     rgba(0,0,0,1) calc(100% - var(--fade)),
     rgba(0,0,0,0) 100%);
 }
 
-/* Members "Load more" */
+/* “Load more” button style with subtle spinner behind text */
 .load-more-row{ margin-top:16px; display:flex; justify-content:center; }
 .load-more-btn{
   position:relative; display:inline-block; text-decoration:none;
@@ -132,58 +191,76 @@ body, input, button, a { font-family:"Helvetica Neue", Helvetica, Arial, sans-se
 .load-more-btn::after{
   content:""; position:absolute; left:50%; top:50%; width:1.5em; height:1.5em; transform:translate(-50%,-50%);
   border:2px solid rgba(139,137,137,.12); border-top-color:rgba(139,137,137,.28);
-  border-radius:50%; animation: spin 1.1s linear infinite; z-index:-1;
+  border-radius:50%; animation: spin 1.1s linear infinite; z-index:-1; opacity:.8;
 }
 @keyframes spin{ to{ transform:translate(-50%,-50%) rotate(360deg); } }
 
-/* ================= Right column ============================ */
+/* =========================
+   RIGHT COLUMN (categories)
+   ========================= */
 .right-acc{ border:0; margin-bottom:125px; }
-.right-acc--open { margin-bottom:25px; }
+.right-acc--scroll{ margin-bottom:25px; }
 
-.right-head{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 2px; cursor:pointer; }
-.right-title{ font-size:24px; font-weight:800; letter-spacing:.06em; color:var(--apc-text); }
+.right-head{
+  display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 2px;
+}
+.right-title{
+  font-size:24px; font-weight:800; letter-spacing:.06em; color:var(--apc-text);
+}
 .right-arrow{ color:var(--apc-text); opacity:.85; transform:translateY(-1px); }
 .right-acc[open] .right-arrow{ transform:rotate(90deg); }
 
+/* Body — first asset 10px below, indented 25px */
 .right-body{ padding:10px 2px 0 2px; }
 .right-list{
-  list-style:none; padding:0; margin:0;
-  display:flex; flex-direction:column; gap:20px; padding-left:25px;
+  list-style:none; padding:0; margin:0; padding-left:25px;
+  display:flex; flex-direction:column; gap:20px;
 }
+
+/* Scroll mode after Load more */
 .right-body--scroll{
   max-height:420px; overflow:auto; padding-right:6px;
   -webkit-mask-image: linear-gradient(to bottom,
     rgba(0,0,0,1) 0px,
     rgba(0,0,0,1) calc(100% - var(--fade)),
     rgba(0,0,0,0) 100%);
-          mask-image: linear-gradient(to bottom,
+  mask-image: linear-gradient(to bottom,
     rgba(0,0,0,1) 0px,
     rgba(0,0,0,1) calc(100% - var(--fade)),
     rgba(0,0,0,0) 100%);
 }
 
+/* Asset text + separators (non-members) */
 .right-card-title{ font-size:16px; color:var(--apc-text); text-decoration:none; }
 .right-card-title:hover{ text-decoration:underline; }
-.right-card-sub{ font-size:14px; opacity:.9; }
+.right-card-sub{ font-size:14px; opacity:.85; }
+.right-card-sub--empty{ opacity:.6; font-style:italic; }
 .asset-sep{ height:1px; background:rgba(139,137,137,.85); margin:5px 0; }
 
+/* Right column Load more */
 .right-load-more-row{ margin-top:10px; padding-left:25px; }
 .right-load-more{
-  color:var(--apc-text); text-decoration:none; font-weight:700; letter-spacing:.06em; position:relative; padding:.2rem .35rem;
+  color:var(--apc-text); text-decoration:none; font-weight:800; letter-spacing:.06em; position:relative; padding:.25rem .5rem;
 }
 .right-load-more::after{
   content:""; position:absolute; left:50%; top:50%; width:1.5em; height:1.5em; transform:translate(-50%,-50%);
   border:2px solid rgba(139,137,137,.12); border-top-color:rgba(139,137,137,.28); border-radius:50%;
-  animation: spin 1.1s linear infinite; z-index:-1;
+  animation: spin 1.1s linear infinite; z-index:-1; opacity:.8;
 }
 
 /* OTHER footer */
-.other-footer{ margin-top:32px; font-weight:800; letter-spacing:.06em; color:var(--apc-text); text-align:center; position:relative; }
-.other-footer::before{ content:""; position:absolute; left:10%; right:10%; height:1px; background:#3a3a3a; top:-20px; }
+.other-footer{
+  margin-top:32px; font-weight:800; letter-spacing:.06em; color:var(--apc-text);
+  text-align:center; position:relative;
+}
+.other-footer::before{
+  content:""; position:absolute; left:10%; right:10%; height:1px; background:#3a3a3a; top:-20px;
+}
 
-/* Stack if needed */
+/* Stack on narrow screens */
 @media (max-width:1200px){
-  .results-shell{ grid-template-columns:1fr; }
-  .results-left, .results-right{ padding:0 24px; }
-  .results-input.results-input--home{ width:min(800px,96%); }
+  .results-shell{ grid-template-columns:1fr; width:100%; }
+  .results-left, .results-right{ padding-left:24px; padding-right:24px; }
+  .results-right{ margin-top:28px; }
+  .results-input{ width:min(800px,96%); }
 }
