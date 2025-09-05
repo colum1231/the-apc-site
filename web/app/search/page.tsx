@@ -20,9 +20,6 @@ function cx(...a: Array<string | false | undefined>) {
 
 /* ===========================
    MEMBERS (client) 
-   - 4 shown by default
-   - clicking LOAD MORE switches to scroll mode (+3 each click)
-   - when scroll mode is active, wrapper gets .members-box--scroll to flip bottom corners to grey
 =========================== */
 function MembersPaneClient({
   initialItems,
@@ -48,11 +45,11 @@ function MembersPaneClient({
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
-  const items = initialItems ?? [];
+  const items = Array.isArray(initialItems) ? initialItems : [];
   const shown = items.slice(0, visible);
 
   const onMore = () => {
-    if (!scrollMode) setScrollMode(true); // flips bottom corners grey via CSS (.members-box--scroll)
+    if (!scrollMode) setScrollMode(true);
     setVisible((v) => v + 3);
   };
 
@@ -71,7 +68,7 @@ function MembersPaneClient({
 
       {/* MEMBERS BOX (centered within left half) */}
       <section className={cx("members-box", scrollMode && "members-box--scroll")}>
-        {/* tiny corner ticks belong to this header only (global CSS hides all other .corner on results) */}
+        {/* tiny corner ticks belong to this header only */}
         <div className="members-title-row" aria-hidden>
           <div className="corner" />
           <div className="corner right" />
@@ -81,12 +78,9 @@ function MembersPaneClient({
           ref={listRef}
           className={cx(
             "members-scroll",
-            scrollMode && "members-box--scroll members-scroll", // keep same class when scrollMode on
-            scrollMode && "members-scroll", // ensure class remains
-            scrollMode && "members-scroll--scroll", // overflow + fades top/bottom
+            scrollMode && "members-scroll--scroll",
             scrollMode && scrolled && "members-scroll--topfade"
           )}
-          style={scrollMode ? undefined : undefined}
         >
           <ul className="members-list">
             {shown.map((m, i) => {
@@ -111,7 +105,6 @@ function MembersPaneClient({
           </ul>
         </div>
 
-        {/* Members "LOAD MORE" (centered). Appears if there are more items than shown. */}
         {items.length > shown.length && (
           <div className="load-more-row load-more-row--members">
             <button
@@ -132,8 +125,8 @@ function MembersPaneClient({
 /* ===========================
    RIGHT CATEGORY (client)
    - default CLOSED
-   - when opened: show 1 asset (10px gap, 25px indent via CSS)
-   - clicking "Load more" => visible += 3; once visible >= 4, body becomes scrollable with fades and spacing shrinks (CSS handles .right-acc--scroll)
+   - open shows 1 asset (10px gap, 25px indent via CSS)
+   - 'Load more' => +3; after >=4, body becomes scrollable with fades
 =========================== */
 function RightSectionClient({
   label,
@@ -146,15 +139,14 @@ function RightSectionClient({
 }) {
   "use client";
 
-  const [open, setOpen] = React.useState(false); // CLOSED by default per spec
-  const [visible, setVisible] = React.useState(1); // preview 1 when opened
-  const hasMore = items.length > visible;
-  const scrollMode = visible >= 4; // 1 preview + at least one "load more" click
+  const [open, setOpen] = React.useState(false);
+  const [visible, setVisible] = React.useState(1);
+  const hasMore = (items?.length ?? 0) > visible;
+  const scrollMode = visible >= 4;
 
   const onToggle = () => {
     setOpen((o) => {
-      // when opening, reset to preview 1
-      if (!o) setVisible(1);
+      if (!o) setVisible(1); // reset to 1 on open
       return !o;
     });
   };
@@ -162,27 +154,23 @@ function RightSectionClient({
   const onMore = () => setVisible((v) => v + 3);
 
   return (
-    <details className={cx("right-acc", scrollMode && "right-acc--scroll")} open={open}>
-      <summary className="right-head" onClick={onToggle}>
+    <section className={cx("right-acc", scrollMode && "right-acc--scroll")}>
+      <button type="button" className="right-head" onClick={onToggle} aria-expanded={open}>
         <span className="right-title">{label}</span>
         <span className="right-arrow">{open ? "▾" : "▸"}</span>
-      </summary>
+      </button>
 
       {open && (
         <div className={cx("right-body", scrollMode && "right-body--scroll")}>
           <ul className="right-list">
-            {items.slice(0, visible).map((it, i) => {
+            {(items ?? []).slice(0, visible).map((it, i) => {
               const title =
                 it?.title ||
                 it?.name ||
                 (label === "CALL LIBRARY" ? "Call" : "Result");
               const url = it?.url || href || "#";
               const sub =
-                it?.quote ||
-                it?.summary ||
-                it?.description ||
-                it?.context ||
-                "";
+                it?.quote || it?.summary || it?.description || it?.context || "";
               return (
                 <li key={`${label}-${i}`}>
                   <a
@@ -215,7 +203,7 @@ function RightSectionClient({
           )}
         </div>
       )}
-    </details>
+    </section>
   );
 }
 
@@ -238,18 +226,7 @@ export default async function SearchPage({
     );
   }
 
-  // call our API
-  const url = `${getBaseUrl()}/api/ask?q=${encodeURIComponent(q)}`;
-  const res = await fetch(url, { cache: "no-store" });
-
-  let data: any;
-  try {
-    data = await res.json();
-  } catch {
-    data = { ok: false as const, status: res.status, body: await res.text() };
-  }
-
-  // Accept either structured JSON or openai_response with ```json block
+  // call API safely
   let sections = {
     members: [] as any[],
     transcripts: [] as any[],
@@ -258,33 +235,48 @@ export default async function SearchPage({
     events: [] as any[],
   };
 
-  const maybe = data?.data || data;
+  try {
+    const url = `${getBaseUrl()}/api/ask?q=${encodeURIComponent(q)}`;
+    const res = await fetch(url, { cache: "no-store" });
 
-  const tryParseBlock = (s: string) => {
-    const m = s.match(/```json\s*([\s\S]*?)\s*```/i);
-    if (!m) return null;
-    try { return JSON.parse(m[1]); } catch { return null; }
-  };
-
-  if (maybe?.transcripts || maybe?.resources || maybe?.partnerships || maybe?.events || maybe?.community_chats) {
-    sections = {
-      members: maybe?.community_chats ?? [],
-      transcripts: maybe?.transcripts?.items ?? maybe?.transcripts ?? [],
-      resources: maybe?.resources?.items ?? maybe?.resources ?? [],
-      partnerships: maybe?.partnerships?.items ?? maybe?.partnerships ?? [],
-      events: maybe?.events?.items ?? maybe?.events ?? [],
-    };
-  } else if (typeof maybe?.openai_response === "string") {
-    const parsed = tryParseBlock(maybe.openai_response);
-    if (parsed) {
-      sections = {
-        members: parsed?.community_chats?.items ?? [],
-        transcripts: parsed?.transcripts?.items ?? [],
-        resources: parsed?.resources?.items ?? [],
-        partnerships: parsed?.partnerships?.items ?? [],
-        events: parsed?.events?.items ?? [],
-      };
+    let data: any = {};
+    try {
+      data = await res.json();
+    } catch {
+      // ignore – keep empty sections on parse issues
+      data = {};
     }
+
+    const maybe = data?.data || data;
+
+    const tryParseBlock = (s: string) => {
+      const m = s.match(/```json\s*([\s\S]*?)\s*```/i);
+      if (!m) return null;
+      try { return JSON.parse(m[1]); } catch { return null; }
+    };
+
+    if (maybe?.transcripts || maybe?.resources || maybe?.partnerships || maybe?.events || maybe?.community_chats) {
+      sections = {
+        members: maybe?.community_chats ?? [],
+        transcripts: maybe?.transcripts?.items ?? maybe?.transcripts ?? [],
+        resources: maybe?.resources?.items ?? maybe?.resources ?? [],
+        partnerships: maybe?.partnerships?.items ?? maybe?.partnerships ?? [],
+        events: maybe?.events?.items ?? maybe?.events ?? [],
+      };
+    } else if (typeof maybe?.openai_response === "string") {
+      const parsed = tryParseBlock(maybe.openai_response);
+      if (parsed) {
+        sections = {
+          members: parsed?.community_chats?.items ?? [],
+          transcripts: parsed?.transcripts?.items ?? [],
+          resources: parsed?.resources?.items ?? [],
+          partnerships: parsed?.partnerships?.items ?? [],
+          events: parsed?.events?.items ?? [],
+        };
+      }
+    }
+  } catch {
+    // swallow; keep empty sections
   }
 
   const rightOrder = (["partnerships", "transcripts", "resources", "events"] as const);
@@ -292,10 +284,8 @@ export default async function SearchPage({
   return (
     <main className="results">
       <div className="results-shell">
-        {/* LEFT (search + members) */}
         <MembersPaneClient initialItems={sections.members ?? []} q={q} />
 
-        {/* RIGHT (categories; CLOSED by default; open to preview first card, then Load more) */}
         <aside className="results-right">
           {rightOrder.map((k) => (
             <RightSectionClient
