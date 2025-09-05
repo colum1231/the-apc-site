@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-/* ---------- small helpers ---------- */
+/* ---------- tiny helpers ---------- */
 function cx(...a: Array<string | false | undefined>) {
   return a.filter(Boolean).join(" ");
 }
@@ -22,7 +22,7 @@ const EMPTY: Sections = {
   events: [],
 };
 
-/* ---------- client fetch with strong guards ---------- */
+/* ---------- client fetch with guards ---------- */
 async function fetchSections(q: string, signal?: AbortSignal): Promise<Sections> {
   if (!q) return EMPTY;
   try {
@@ -30,17 +30,16 @@ async function fetchSections(q: string, signal?: AbortSignal): Promise<Sections>
       cache: "no-store",
       signal,
     });
-
-    // Non-200 or non-JSON? return empty safely.
     if (!res.ok) return EMPTY;
+
     const ct = res.headers.get("content-type") || "";
     if (!ct.includes("application/json")) return EMPTY;
 
     const data: any = await res.json().catch(() => null);
     if (!data) return EMPTY;
+
     const maybe = data?.data ?? data;
 
-    // direct structured
     if (
       maybe?.transcripts ||
       maybe?.resources ||
@@ -57,10 +56,10 @@ async function fetchSections(q: string, signal?: AbortSignal): Promise<Sections>
       };
     }
 
-    // JSON fenced in string
-    const block = typeof maybe?.openai_response === "string"
-      ? maybe.openai_response.match(/```json\s*([\s\S]*?)\s*```/i)
-      : null;
+    const block =
+      typeof maybe?.openai_response === "string"
+        ? maybe.openai_response.match(/```json\s*([\s\S]*?)\s*```/i)
+        : null;
 
     if (block?.[1]) {
       try {
@@ -83,8 +82,8 @@ async function fetchSections(q: string, signal?: AbortSignal): Promise<Sections>
   }
 }
 
-/* ======================= PAGE (client) ======================= */
-export default function SearchPage() {
+/* ---------- Inner page that actually uses useSearchParams ---------- */
+function SearchInner() {
   const params = useSearchParams();
   const router = useRouter();
   const q = params.get("q") ?? "";
@@ -108,7 +107,7 @@ export default function SearchPage() {
     return () => ctrl.abort();
   }, [q]);
 
-  // ----- members pane local UI state
+  // members UI state
   const [membersVisible, setMembersVisible] = React.useState(4);
   const [membersExpanded, setMembersExpanded] = React.useState(false);
   const listRef = React.useRef<HTMLDivElement>(null);
@@ -125,7 +124,7 @@ export default function SearchPage() {
 
   const shownMembers = (sections.members ?? []).slice(0, membersVisible);
 
-  // ----- right category state
+  // right column state
   const [openPartnerships, setOpenPartnerships] = React.useState(false);
   const [openTranscripts, setOpenTranscripts] = React.useState(false);
   const [openResources, setOpenResources] = React.useState(false);
@@ -147,8 +146,7 @@ export default function SearchPage() {
 
   const onSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
-    const form = e.currentTarget;
-    const fd = new FormData(form);
+    const fd = new FormData(e.currentTarget);
     const nextQ = String(fd.get("q") || "");
     router.push(`/search?q=${encodeURIComponent(nextQ)}`);
   };
@@ -156,7 +154,7 @@ export default function SearchPage() {
   return (
     <main className="results">
       <div className="results-shell">
-        {/* ========== LEFT (search + members) ========== */}
+        {/* LEFT */}
         <div className="results-left">
           <form className="results-search" role="search" onSubmit={onSubmit}>
             <input
@@ -220,7 +218,7 @@ export default function SearchPage() {
           </section>
         </div>
 
-        {/* ========== RIGHT (categories; closed by default) ========== */}
+        {/* RIGHT */}
         <aside className="results-right">
           {/* Partnerships */}
           <details
@@ -244,12 +242,7 @@ export default function SearchPage() {
                       const url = it?.url || "#";
                       return (
                         <li key={`p-${i}`} className="right-card">
-                          <a
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="right-card-title"
-                          >
+                          <a href={url} target="_blank" rel="noopener noreferrer" className="right-card-title">
                             {title}
                           </a>
                           {!!sub && <div className="right-card-sub">“{sub}”</div>}
@@ -288,12 +281,7 @@ export default function SearchPage() {
                       const url = it?.url || "#";
                       return (
                         <li key={`t-${i}`} className="right-card">
-                          <a
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="right-card-title"
-                          >
+                          <a href={url} target="_blank" rel="noopener noreferrer" className="right-card-title">
                             {title}
                           </a>
                           {!!sub && <div className="right-card-sub">“{sub}”</div>}
@@ -332,12 +320,7 @@ export default function SearchPage() {
                       const url = it?.url || "#";
                       return (
                         <li key={`r-${i}`} className="right-card">
-                          <a
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="right-card-title"
-                          >
+                          <a href={url} target="_blank" rel="noopener noreferrer" className="right-card-title">
                             {title}
                           </a>
                           {!!sub && <div className="right-card-sub">“{sub}”</div>}
@@ -372,19 +355,11 @@ export default function SearchPage() {
                     .slice(0, visEvt)
                     .map((it, i) => {
                       const name = it?.title || it?.name || "Event";
-                      const meta = [
-                        it?.location,
-                        it?.dates || it?.date_range,
-                      ].filter(Boolean).join(" | ");
+                      const meta = [it?.location, it?.dates || it?.date_range].filter(Boolean).join(" | ");
                       const url = it?.url || "#";
                       return (
                         <li key={`e-${i}`} className="right-card">
-                          <a
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="right-card-title"
-                          >
+                          <a href={url} target="_blank" rel="noopener noreferrer" className="right-card-title">
                             {name}
                           </a>
                           {!!meta && <div className="right-card-sub">{meta}</div>}
@@ -405,5 +380,14 @@ export default function SearchPage() {
         </aside>
       </div>
     </main>
+  );
+}
+
+/* ---------- DEFAULT EXPORT WRAPPED IN SUSPENSE ---------- */
+export default function Page() {
+  return (
+    <Suspense fallback={<main className="results"><div className="results-shell" /></main>}>
+      <SearchInner />
+    </Suspense>
   );
 }
