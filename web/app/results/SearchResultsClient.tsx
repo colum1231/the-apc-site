@@ -1,12 +1,12 @@
-'use client'
+"use client";
 
-import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { fetchCustomGPTResults } from '../lib/fetchCustomGPTResults';
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { fetchCustomGPTResults } from "../lib/fetchCustomGPTResults";
 
 export default function SearchResultsClient() {
   const searchParams = useSearchParams();
-  const query = searchParams.get('q');
+  const query = searchParams.get("q");
   const [data, setData] = useState(null);
 
   useEffect(() => {
@@ -19,11 +19,11 @@ export default function SearchResultsClient() {
     // console.log("API KEY:", process.env.NEXT_PUBLIC_CUSTOMGPT_API_KEY);
 
     fetchCustomGPTResults(query)
-      .then(res => {
+      .then((res) => {
         console.log("CustomGPT Response:", res);
         setData(res);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("Fetch error:", err);
         console.error("API fetch failed:", err);
       });
@@ -35,7 +35,11 @@ export default function SearchResultsClient() {
     <div>
       <h1>Results</h1>
       {query ? (
-        data ? <pre>{JSON.stringify(data, null, 2)}</pre> : <p>Loading...</p>
+        data ? (
+          <pre>{JSON.stringify(data, null, 2)}</pre>
+        ) : (
+          <p>Loading...</p>
+        )
       ) : (
         <p>No query found</p>
       )}

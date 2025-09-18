@@ -36,27 +36,36 @@ export async function POST(req: Request) {
   const projectId = body.projectId || process.env.CUSTOMGPT_PROJECT_ID;
 
   if (!apiKey || !projectId) {
+    console.error("[API/ask] Missing CUSTOMGPT_API_KEY or CUSTOMGPT_PROJECT_ID", { apiKey, projectId });
     return Response.json(
-      { ok: false, error: "Missing CUSTOMGPT_API_KEY or CUSTOMGPT_PROJECT_ID" },
+      { ok: false, error: "Missing CUSTOMGPT_API_KEY or CUSTOMGPT_PROJECT_ID", apiKey, projectId },
       { status: 500 }
     );
   }
 
   // 1) Create conversation
-  const convRes = await fetch(`${API_BASE}/projects/${projectId}/conversations`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      // NOTE: canonical-cased header
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({ name: "APC session" }),
-    cache: "no-store",
-  });
-
-  const convBody = await jsonSafe(convRes);
+  let convRes, convBody;
+  try {
+    convRes = await fetch(`${API_BASE}/projects/${projectId}/conversations`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ name: "APC session" }),
+      cache: "no-store",
+    });
+    convBody = await jsonSafe(convRes);
+  } catch (err) {
+    console.error("[API/ask] Error creating conversation:", err);
+    return Response.json(
+      { ok: false, step: "create_conversation", error: String(err) },
+      { status: 500 }
+    );
+  }
   if (!convRes.ok) {
+    console.error("[API/ask] Conversation creation failed", { status: convRes.status, body: convBody });
     return Response.json(
       { ok: false, step: "create_conversation", status: convRes.status, body: convBody },
       { status: convRes.status }
@@ -71,6 +80,7 @@ export async function POST(req: Request) {
     null;
 
   if (!sessionId) {
+    console.error("[API/ask] No session_id returned", { convBody });
     return Response.json(
       { ok: false, step: "create_conversation", status: 500, body: convBody, error: "No session_id returned" },
       { status: 500 }
@@ -78,25 +88,34 @@ export async function POST(req: Request) {
   }
 
   // 2) Send message
-  const msgRes = await fetch(
-    `${API_BASE}/projects/${projectId}/conversations/${sessionId}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        prompt: q,
-        response_source: "default",
-      }),
-      cache: "no-store",
-    }
-  );
-
-  const msgBody = await jsonSafe(msgRes);
+  let msgRes, msgBody;
+  try {
+    msgRes = await fetch(
+      `${API_BASE}/projects/${projectId}/conversations/${sessionId}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          prompt: q,
+          response_source: "default",
+        }),
+        cache: "no-store",
+      }
+    );
+    msgBody = await jsonSafe(msgRes);
+  } catch (err) {
+    console.error("[API/ask] Error sending message:", err);
+    return Response.json(
+      { ok: false, step: "send_message", error: String(err) },
+      { status: 500 }
+    );
+  }
   if (!msgRes.ok) {
+    console.error("[API/ask] Message send failed", { status: msgRes.status, body: msgBody });
     return Response.json(
       { ok: false, step: "send_message", status: msgRes.status, body: msgBody },
       { status: msgRes.status }

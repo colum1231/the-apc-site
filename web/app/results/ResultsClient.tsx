@@ -1,8 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
-
-const MembersPaneClient = dynamic(() => import("../search/MembersPaneClient"), { ssr: false });
-const RightSectionClient = dynamic(() => import("../search/RightSectionClient"), { ssr: false });
+import React, { useState } from "react";
 
 type Member = { name: string; industry?: string; quote?: string };
 type Category = { title: string; subtitle?: string; quote?: string; url?: string };
@@ -33,6 +31,43 @@ export default function ResultsClient({ members, categories, q, gptResult }: Pro
   const sectionKeys = Object.keys(parsedSections).filter(
     (k) => parsedSections[k] && Array.isArray(parsedSections[k].items)
   );
+  
+  // Simple SectionList component definition
+  type SectionListProps = {
+    allSections: {
+      key: string;
+      title: string;
+      url?: string;
+      items: any[];
+    }[];
+  };
+  
+  function SectionList({ allSections }: SectionListProps) {
+    return (
+      <div>
+        {allSections.map((section) => (
+          <div key={section.key} style={{ marginBottom: 32 }}>
+            <h2 style={{ color: 'white', border: '2px solid red', padding: '4px', borderRadius: '6px', display: 'inline-block' }}>
+              {section.url ? (
+                <a href={section.url} target="_blank" rel="noopener noreferrer" style={{ color: 'lightblue' }}>
+                  {section.title}
+                </a>
+              ) : (
+                section.title
+              )}
+            </h2>
+            <ul>
+              {section.items.map((item: any, idx: number) => (
+                <li key={idx} style={{ color: 'white' }}>
+                  {typeof item === 'string' ? item : JSON.stringify(item)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    );
+  }
   let allSections: any[] = [];
   sectionKeys.forEach((key) => {
     const section = parsedSections[key];
@@ -53,24 +88,13 @@ export default function ResultsClient({ members, categories, q, gptResult }: Pro
       </div>
       <div className="apc-results-shell">
         {allSections.length > 0 ? (
-          allSections.map((section, sIdx) => (
-            <div key={section.key} style={{ marginBottom: 32 }}>
-              <div style={{ fontWeight: 'bold', fontSize: 20, color: '#ffd700', marginBottom: 8 }}>{section.title}</div>
-              {section.items.map((item: any, idx: number) => (
-                <div key={idx} style={{ padding: 12, borderBottom: '1px solid #444', color: 'white', marginBottom: 8 }}>
-                  {Object.entries(item).map(([k, v]) => (
-                    <div key={k} style={{ fontSize: 15, marginBottom: 2 }}>
-                      <span style={{ fontWeight: 600 }}>{k}:</span> <span>{String(v)}</span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          ))
+          <SectionList allSections={allSections} />
         ) : (
-          <div style={{ color: 'white', textAlign: 'center', marginTop: 32 }}>No results found for this search.</div>
+          <div style={{ color: 'white', textAlign: 'center', marginTop: 32 }}>
+            No results found for this search.
+          </div>
         )}
       </div>
-    </main>
-  );
-}
+          </main>
+        );
+  }

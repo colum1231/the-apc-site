@@ -1,17 +1,18 @@
+"use client";
 // app/page.tsx
+import React, { useEffect, useState } from "react";
+
 export default function Home() {
+  const [showFade, setShowFade] = useState(true);
+  useEffect(() => {
+    const timeout = setTimeout(() => setShowFade(false), 3015);
+    return () => clearTimeout(timeout);
+  }, []);
+
   return (
     <main className="landing-wrap">
-      
-      <div className="landing-wrap" aria-hidden="true" />
-
-      <img
-        className="logo"
-        src="/aplayers-mark.png"
-        alt="A Players"
-        width={64}
-        height={64}
-      />
+      {/* Black overlay for fade effect */}
+      {showFade && <div className="landing-fade" aria-hidden="true" />}
 
       <form action="/search" method="get" className="search" role="search">
         <input

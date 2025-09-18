@@ -1,3 +1,59 @@
+/* Fade in the entire landing page from black */
+
+/* Fade OUT the entire landing page to black */
+
+
+.landing-wrap {
+  position: fixed;
+  inset: 0;
+  background: #000 url("/landing_back.jpg") center/cover no-repeat;
+  z-index: 0;
+}
+
+.landing-fade {
+  animation: landing-fade-in 2.75s cubic-bezier(0.4,0,0.2,1) forwards;
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 2;
+}
+
+@keyframes landing-fade-in {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Fade and slide up the search box and its contents */
+
+.search {
+  opacity: 0;
+  position: fixed;
+  top: 400px;
+  left: 50%;
+  width: 475px;
+  height: 42.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateX(-50%) translateY(100px);
+  animation: search-fade-slide-in 2s cubic-bezier(0.4,0,0.2,1) 0.75s forwards;
+}
+
+@keyframes search-fade-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
 /* ===== Landing — keep as you have it (known-good) ===== */
 :root{
   --outline:#545454;
@@ -19,17 +75,45 @@ html,body{height:100%;background:#000;}
 body,input,button,a{font-family:"Helvetica Neue", Helvetica, Arial, sans-serif;}
 
 /* Landing bg */
-html, body{background:#000 url("/landing-bg.png") center/cover no-repeat fixed;}
+html, body{background:#000 url("/landing_back.jpg") center/cover no-repeat fixed;}
 
 /* Landing (logo/search/HQ) — unchanged */
-.landing-wrap{position:fixed;inset:0;background:#000 url("/landing-bg.png") center/cover no-repeat;}
+.landing-wrap{position:fixed;inset:0;background:#000 url("/landing_back.jpg") center/cover no-repeat;}
 .logo{position:fixed;top:97.5px;left:50%;transform:translateX(-50%);width:120px;height:auto;}
-.search{position:fixed;top:400px;left:50%;transform:translateX(-50%);width:350px;height:42.5px;display:flex;align-items:center;justify-content:center;}
-.input{width:100%;height:100%;border:2px solid var(--outline);border-radius:999px;background:transparent;color:#373737;text-align:center;font-size:16.5px;outline:none;padding:0 28px;}
+.search{position:fixed;top:400px;left:50%;transform:translateX(-50%);width:475px;height:42.5px;display:flex;align-items:center;justify-content:center;}
+.input{width:100%;height:100%;border:1px solid var(--outline);border-radius:999px;background:transparent;color:#202020;text-align:center;font-size:14.5px;outline:none;padding:0 28px;}
 .input::placeholder{color:var(--outline);opacity:.6;transition:opacity .15s ease;}
 .input:focus::placeholder{opacity:0;}
-.hq{position:fixed;left:50%;transform:translateX(-50%);bottom:28px;font-size:18px;color:var(--hq-color);opacity:.5;text-decoration:none;}
-.hq:hover{opacity:.8;text-decoration:underline;text-underline-offset:3px;}
+
+
+.hq {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  bottom: 28px;
+  font-size: 18px;
+  color: var(--hq-color);
+  opacity: .5;
+  text-decoration: none;
+  animation: hq-fade-slide-in 2s cubic-bezier(0.4,0,0.2,1) 1.2s forwards;
+}
+.hq:hover {
+  opacity: .8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+
+@keyframes hq-fade-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(100px);
+  }
+  to {
+    opacity: .5;
+    transform: translateX(-50%) translateY(0);
+  }
+}
 
 /* ===== Results Page ===== */
 .results{

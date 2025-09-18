@@ -1,4 +1,55 @@
 "use client";
+// SectionList component for rendering API results sections
+type SectionListProps = {
+  allSections: {
+    key: string;
+    title: string;
+    url?: string;
+    items: any[];
+  }[];
+};
+
+function SectionList({ allSections }: SectionListProps) {
+  // Map section keys to asset filenames (add more as needed)
+  const assetMap: Record<string, string> = {
+    transcripts: '/file.svg',
+    community_chats: '/globe.svg',
+    partnerships: '/aplayers-mark.png',
+    resources: '/window.svg',
+    events: '/vercel.svg',
+    // fallback icon
+    default: '/next.svg',
+  };
+  return (
+    <div>
+      {allSections.map((section) => {
+        // Pick asset by key, fallback to default
+        const asset = assetMap[section.key] || assetMap.default;
+        return (
+          <div key={section.key} style={{ marginBottom: 32 }}>
+            <h2 style={{ color: 'white', border: '2px solid red', padding: '4px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <img src={asset} alt={section.key + ' icon'} style={{ width: 28, height: 28, objectFit: 'contain', marginRight: 6 }} />
+              {section.url ? (
+                <a href={section.url} target="_blank" rel="noopener noreferrer" style={{ color: 'lightblue' }}>
+                  {section.title}
+                </a>
+              ) : (
+                section.title
+              )}
+            </h2>
+            <ul>
+              {section.items.map((item: any, idx: number) => (
+                <li key={idx} style={{ color: 'white' }}>
+                  {typeof item === 'string' ? item : JSON.stringify(item)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -118,46 +169,9 @@ export default function SearchResultsClient({ members, partnerships, calls, reso
   }
 
   if (error) return <p style={{ color: 'red' }}>{error}</p>;
-  if (!Array.isArray(results)) return <p style={{ color: 'white' }}>No valid results</p>;
+  // If sections exist, use SectionList for rendering
   if (sections && sections.length > 0) {
-    return (
-      <div>
-        {sections.map((section, sIdx) => (
-          <div key={section.key} style={{ marginBottom: 32 }}>
-            <h2 style={{ color: '#ffd700', marginBottom: 8 }}>
-              {section.title}
-              {section.url && (
-                <a href={section.url} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 8, fontSize: 14, color: '#fff' }}>
-                  [link]
-                </a>
-              )}
-            </h2>
-            {section.items.map((item: any, idx: number) => (
-              <div key={idx} style={{ padding: 16, borderBottom: '1px solid #444', color: 'white', marginBottom: 8 }}>
-                <strong>{item.title || item.name || 'No Title'}</strong>
-                {item.quote && <blockquote style={{ margin: '8px 0', fontStyle: 'italic', color: '#b3b3b3' }}>{item.quote}</blockquote>}
-                {item.summary && <p>{item.summary}</p>}
-                {item.description && <p>{item.description}</p>}
-                {item.context && <p style={{ fontSize: 13, opacity: 0.8 }}>{item.context}</p>}
-                {item.url && (
-                  <div>
-                    <a href={item.url} target="_blank" rel="noopener noreferrer" style={{ color: '#61dafb', fontSize: 13 }}>
-                      {item.url}
-                    </a>
-                  </div>
-                )}
-                {item.username && (
-                  <div style={{ fontSize: 13, opacity: 0.8 }}>User: {item.username}</div>
-                )}
-                {item.source && (
-                  <div style={{ fontSize: 12, opacity: 0.6 }}>Source: {item.source}</div>
-                )}
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-    );
+    return <SectionList allSections={sections} />;
   }
   if (results && results.length === 0) return <p style={{ color: 'white' }}>No results found for this search.</p>;
   if (!data) return <p style={{ color: 'white' }}>Loading...</p>;
