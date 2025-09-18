@@ -26,6 +26,7 @@ export default function SearchResultsClient({ members, partnerships, calls, reso
   const inputRef = useRef<HTMLInputElement>(null);
   const [data, setData] = useState<any>(null);
   const [results, setResults] = useState<any[]>([]);
+  const [sections, setSections] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -38,15 +39,34 @@ export default function SearchResultsClient({ members, partnerships, calls, reso
         setData(res);
         console.log("CustomGPT Response:", res);
         console.log("✅ FULL API response:", res);
-        if (res && Array.isArray(res.results)) {
-          setResults(res.results);
-        } else {
-          setResults([]);
-        }
+        // Flatten all items from all sections
+        const data = res?.data || {};
+        const sectionKeys = Object.keys(data).filter(
+          (k) => data[k] && Array.isArray(data[k].items)
+        );
+        let allItems: any[] = [];
+        let allSections: any[] = [];
+        sectionKeys.forEach((key) => {
+          const section = data[key];
+          if (Array.isArray(section.items) && section.items.length > 0) {
+            allSections.push({
+              key,
+              title: section.section_title || key,
+              url: section.section_url,
+              items: section.items,
+            });
+            allItems = allItems.concat(
+              section.items.map((item: any) => ({ ...item, _section: section.section_title || key, _sectionUrl: section.section_url }))
+            );
+          }
+        });
+        setResults(allItems);
+        setSections(allSections);
         setError(null);
       } catch (err: any) {
         setError("Failed to fetch results.");
         setResults([]);
+        setSections([]);
         console.error("API fetch failed:", err);
       }
     }
@@ -57,20 +77,47 @@ export default function SearchResultsClient({ members, partnerships, calls, reso
     e.preventDefault();
     const value = inputRef.current?.value || "";
     if (value.trim()) {
-      router.push(`/results?query=${encodeURIComponent(value)}`);
+      router.push(`/search?q=${encodeURIComponent(value)}`);
     }
   }
 
   if (error) return <p style={{ color: 'red' }}>{error}</p>;
   if (!Array.isArray(results)) return <p style={{ color: 'white' }}>No valid results</p>;
-  if (results && results.length > 0) {
+  if (sections && sections.length > 0) {
     return (
       <div>
-        {results.map((item, index) => (
-          <div key={index} style={{ padding: 20, borderBottom: '1px solid white', color: 'white' }}>
-            <strong>{item?.title || 'No Title'}</strong>
-            <p>{item?.description || 'No Description'}</p>
-            <span style={{ opacity: 0.6 }}>{item?.type || 'No Type'}</span>
+        {sections.map((section, sIdx) => (
+          <div key={section.key} style={{ marginBottom: 32 }}>
+            <h2 style={{ color: '#ffd700', marginBottom: 8 }}>
+              {section.title}
+              {section.url && (
+                <a href={section.url} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 8, fontSize: 14, color: '#fff' }}>
+                  [link]
+                </a>
+              )}
+            </h2>
+            {section.items.map((item: any, idx: number) => (
+              <div key={idx} style={{ padding: 16, borderBottom: '1px solid #444', color: 'white', marginBottom: 8 }}>
+                <strong>{item.title || item.name || 'No Title'}</strong>
+                {item.quote && <blockquote style={{ margin: '8px 0', fontStyle: 'italic', color: '#b3b3b3' }}>{item.quote}</blockquote>}
+                {item.summary && <p>{item.summary}</p>}
+                {item.description && <p>{item.description}</p>}
+                {item.context && <p style={{ fontSize: 13, opacity: 0.8 }}>{item.context}</p>}
+                {item.url && (
+                  <div>
+                    <a href={item.url} target="_blank" rel="noopener noreferrer" style={{ color: '#61dafb', fontSize: 13 }}>
+                      {item.url}
+                    </a>
+                  </div>
+                )}
+                {item.username && (
+                  <div style={{ fontSize: 13, opacity: 0.8 }}>User: {item.username}</div>
+                )}
+                {item.source && (
+                  <div style={{ fontSize: 12, opacity: 0.6 }}>Source: {item.source}</div>
+                )}
+              </div>
+            ))}
           </div>
         ))}
       </div>
