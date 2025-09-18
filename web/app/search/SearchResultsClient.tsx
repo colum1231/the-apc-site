@@ -107,11 +107,11 @@ export default function SearchResultsClient({ members, partnerships, calls, reso
       });
   }, [q]);
 
-  // Extract categories
-  const callsResults = resultsData?.calls || resultsData?.call_recordings || [];
-  const community = resultsData?.community || resultsData?.community_chats || [];
-  const partners = resultsData?.partners || resultsData?.partnerships || [];
-  const resourcesResults = resultsData?.resources || [];
+  // Extract categories from correct API keys
+  const callsResults = resultsData?.transcripts?.items || [];
+  const community = resultsData?.community_chats?.items || [];
+  const partners = resultsData?.partnerships?.items || [];
+  const resourcesResults = resultsData?.resources?.items || [];
 
   // Card style
   const cardStyle: React.CSSProperties = {
@@ -197,7 +197,7 @@ export default function SearchResultsClient({ members, partnerships, calls, reso
     (!callsResults.length && !community.length && !partners.length && !resourcesResults.length);
 
   return (
-    <div style={{ display: "flex", height: "100vh", width: "100vw", background: "#18181b" }}>
+    <div key={q} style={{ display: "flex", height: "100vh", width: "100vw", background: "#18181b" }}>
       {/* Left: Search Box */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 48, minWidth: 0, borderRight: "1px solid #222" }}>
         <form
