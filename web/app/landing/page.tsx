@@ -4,7 +4,7 @@ export default function Landing() {
       style={{
         minHeight: "100vh",
         minWidth: "100vw",
-        backgroundImage: "url('/landing_back.jpg')",
+  backgroundImage: "url('/res+cat_back.jpg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundAttachment: "fixed",

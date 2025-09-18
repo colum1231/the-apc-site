@@ -107,11 +107,39 @@ export default function SearchResultsClient({ members, partnerships, calls, reso
       });
   }, [q]);
 
-  // Extract categories from correct API keys
-  const callsResults = resultsData?.transcripts?.items || [];
-  const community = resultsData?.community_chats?.items || [];
-  const partners = resultsData?.partnerships?.items || [];
-  const resourcesResults = resultsData?.resources?.items || [];
+  // Compose all sections for SectionList
+  const allSections = [
+    resultsData?.transcripts && {
+      key: 'transcripts',
+      title: resultsData.transcripts.section_title || 'Call Recordings',
+      url: resultsData.transcripts.section_url,
+      items: resultsData.transcripts.items || [],
+    },
+    resultsData?.community_chats && {
+      key: 'community_chats',
+      title: resultsData.community_chats.section_title || 'Community Chats',
+      url: resultsData.community_chats.section_url,
+      items: resultsData.community_chats.items || [],
+    },
+    resultsData?.partnerships && {
+      key: 'partnerships',
+      title: resultsData.partnerships.section_title || 'Partnerships',
+      url: resultsData.partnerships.section_url,
+      items: resultsData.partnerships.items || [],
+    },
+    resultsData?.resources && {
+      key: 'resources',
+      title: resultsData.resources.section_title || 'Resources',
+      url: resultsData.resources.section_url,
+      items: resultsData.resources.items || [],
+    },
+    resultsData?.events && {
+      key: 'events',
+      title: resultsData.events.section_title || 'Events',
+      url: resultsData.events.section_url,
+      items: resultsData.events.items || [],
+    },
+  ].filter(Boolean);
 
   // Card style
   const cardStyle: React.CSSProperties = {
@@ -191,10 +219,7 @@ export default function SearchResultsClient({ members, partnerships, calls, reso
   };
 
   // --- Layout ---
-  const noResults =
-    !loading &&
-    !errorMsg &&
-    (!callsResults.length && !community.length && !partners.length && !resourcesResults.length);
+  const noResults = !loading && !errorMsg && allSections.every(section => section.items.length === 0);
 
   return (
     <div key={q} style={{ display: "flex", height: "100vh", width: "100vw", background: "#18181b" }}>
@@ -236,10 +261,7 @@ export default function SearchResultsClient({ members, partnerships, calls, reso
             <div style={{ color: "#fff" }}>Loading...</div>
           ) : (
             <>
-              {renderCategory(callsResults, "calls", "Call Recordings")}
-              {renderCategory(community, "community", "Community Chats")}
-              {renderCategory(partners, "partners", "Partnerships")}
-              {renderCategory(resourcesResults, "resources", "Resources")}
+              <SectionList allSections={allSections} />
               {noResults && (
                 <p style={{ color: '#fff' }}>No results found for this query.</p>
               )}
