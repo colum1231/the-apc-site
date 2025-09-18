@@ -10,10 +10,12 @@ export default function RightSectionClient({
   label,
   items,
   href,
+  data,
 }: {
   label: string;
   items: any[];
   href: string;
+  data?: any;
 }) {
   const [open, setOpen] = React.useState(false); // closed by default
   const [visible, setVisible] = React.useState(1); // show 1 when opened
@@ -98,6 +100,12 @@ export default function RightSectionClient({
             </div>
           )}
         </div>
+      )}
+
+      {data && (
+        <pre style={{ maxWidth: 400, overflowX: "auto", background: "#f5f5f5", color: "#222", fontSize: 12, margin: 8, padding: 8 }}>
+          {JSON.stringify(data, null, 2)}
+        </pre>
       )}
     </section>
   );

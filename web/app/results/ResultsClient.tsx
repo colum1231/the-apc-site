@@ -11,9 +11,10 @@ type Props = {
   members: Member[];
   categories: Category[];
   q: string;
+  gptResult?: any;
 };
 
-export default function ResultsClient({ members, categories, q }: Props) {
+export default function ResultsClient({ members, categories, q, gptResult }: Props) {
   const callTranscripts = categories.filter((c) => c.title === "Call Transcripts").slice(0, 1);
   const resources = categories.filter((c) => c.title === "Resources").slice(0, 1);
   const partnerships = categories.filter((c) => c.title === "Partnerships").slice(0, 1);
@@ -27,10 +28,10 @@ export default function ResultsClient({ members, categories, q }: Props) {
         </section>
         <section className="apc-results-right">
           <div className="right-inner">
-            <RightSectionClient label="CALL TRANSCRIPTS" items={callTranscripts} href="/calls" />
-            <RightSectionClient label="RESOURCES" items={resources} href="/resources" />
-            <RightSectionClient label="PARTNERSHIPS" items={partnerships} href="/partnerships" />
-            <RightSectionClient label="EVENTS" items={events} href="/events" />
+            <RightSectionClient label="CALL TRANSCRIPTS" items={callTranscripts} href="/calls" data={gptResult} />
+            <RightSectionClient label="RESOURCES" items={resources} href="/resources" data={gptResult} />
+            <RightSectionClient label="PARTNERSHIPS" items={partnerships} href="/partnerships" data={gptResult} />
+            <RightSectionClient label="EVENTS" items={events} href="/events" data={gptResult} />
             <div className="other-footer">OTHER</div>
           </div>
         </section>
