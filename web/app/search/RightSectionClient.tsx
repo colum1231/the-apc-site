@@ -54,7 +54,7 @@ export default function RightSectionClient({
 
       {open && (
         <div className={cx("right-body", scrollMode && "right-body--scroll")}>
-          <ul className="right-list">
+          <ul className="right-list" style={{ listStyle: "none", paddingLeft: 0 }}>
             {(items ?? []).slice(0, visible).map((it, i) => {
               const title =
                 it?.title || it?.name || (label === "CALL LIBRARY" ? "Call" : "Result");
@@ -62,16 +62,20 @@ export default function RightSectionClient({
               const sub =
                 it?.quote || it?.summary || it?.description || it?.context || "";
               return (
-                <li key={`${label}-${i}`}>
+                <li key={`${label}-${i}`} style={{ border: "none", padding: 0 }}>
                   <a
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="right-card-title"
+                    style={{ fontWeight: "bold" }}
                   >
                     {title}
                   </a>
-                  <div className={cx("right-card-sub", !sub && "right-card-sub--empty")}>
+                  <div
+                    className={cx("right-card-sub", !sub && "right-card-sub--empty")}
+                    style={{ fontSize: "80%" }}
+                  >
                     {sub ? `“${sub}”` : " "}
                   </div>
                 </li>

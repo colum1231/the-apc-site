@@ -1,3 +1,4 @@
+/* Results page layout and styles from chatbot */
 .apc-results-main {
   width: 100vw;
   min-height: 100vh;
@@ -11,10 +12,10 @@
 
 .apc-results-left,
 .apc-results-right {
-  width: 50vw;
+  flex: 1 1 0%; /* Ensures true 50/50 split */
   min-width: 0;
   box-sizing: border-box;
-  padding: 0 110px;
+  padding: 0 60px; /* Reduce padding for more even split */
   display: flex;
   flex-direction: column;
 }
@@ -52,5 +53,4 @@
   .apc-results-left {
     border-right: none;
   }
-
 }

@@ -32,13 +32,12 @@ export default function MembersPaneClient({
   const shown = items.slice(0, visible);
 
   const onMore = () => {
-    if (!scrollMode) setScrollMode(true); // flips bottom corners to grey via CSS
+    if (!scrollMode) setScrollMode(true);
     setVisible((v) => v + 3);
   };
 
   return (
     <div className="results-left">
-      {/* search box – same look/size as landing */}
       <form action="/search" method="get" className="results-search" role="search">
         <input
           name="q"
@@ -48,14 +47,7 @@ export default function MembersPaneClient({
           autoFocus
         />
       </form>
-
-      {/* MEMBERS BOX */}
       <section className={cx("members-box", scrollMode && "members-box--scroll")}>
-        <div className="members-title-row" aria-hidden>
-          <div className="corner" />
-          <div className="corner right" />
-        </div>
-
         <div
           ref={listRef}
           className={cx(
@@ -64,29 +56,25 @@ export default function MembersPaneClient({
             scrollMode && scrolled && "members-scroll--topfade"
           )}
         >
-          <ul className="members-list">
+          <ul className="members-list" style={{ listStyle: "none", paddingLeft: 0 }}>
             {shown.map((m, i) => {
               const name = m?.name || m?.title || "Member";
               const role = m?.role || m?.industry || m?.subtitle || "";
               const quote = m?.quote || m?.context || "";
               return (
-                <li key={`m-${i}`} className="member-card member-card--clean">
+                <li key={`m-${i}`} className="member-card member-card--clean" style={{ border: "none", padding: 0 }}>
                   <div className="member-head">
-                    <span className="member-name">{name}</span>
+                    <span className="member-name" style={{ fontWeight: "bold" }}>{name}</span>
                     {role && (
-                      <>
-                        <span className="sep">|</span>
-                        <span className="member-meta">{role}</span>
-                      </>
+                      <span className="member-meta" style={{ fontSize: "80%" }}> {role}</span>
                     )}
                   </div>
-                  {quote && <div className="member-quote">“{quote}”</div>}
+                  {quote && <div className="member-quote" style={{ fontSize: "80%" }}>“{quote}”</div>}
                 </li>
               );
             })}
           </ul>
         </div>
-
         {items.length > shown.length && (
           <div className="load-more-row load-more-row--members">
             <button
