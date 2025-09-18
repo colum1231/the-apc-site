@@ -1,7 +1,9 @@
 export async function fetchCustomGPTResults(query: string) {
-  // Call the local API route which handles the correct CustomGPT flow
+  // Hardcoded CustomGPT credentials
+  const apiKey = "8352|mvmrkQwCNY2JZ72qgUwcbBksdbvq8BJHqDMIWDhl1ca744f6";
+  const projectId = 80230;
   const url = "/api/ask";
-  const payload = { q: query };
+  const payload = { q: query, apiKey, projectId };
   console.log("CustomGPT (local) fetch URL:", url);
   console.log("CustomGPT (local) fetch method: POST");
   console.log("CustomGPT (local) fetch payload:", JSON.stringify(payload));
@@ -11,10 +13,13 @@ export async function fetchCustomGPTResults(query: string) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    console.log("CustomGPT (local) fetch status:", res.status);
     const text = await res.clone().text();
+    console.log("CustomGPT (local) fetch status:", res.status);
     console.log("CustomGPT (local) fetch raw response:", text);
-    if (!res.ok) throw new Error("Failed to fetch CustomGPT results");
+    if (!res.ok) {
+      console.error(`CustomGPT fetch failed with status ${res.status}. Response:`, text);
+      throw new Error(`Failed to fetch CustomGPT results (status: ${res.status})\n${text}`);
+    }
     const response = JSON.parse(text);
     console.log("✅ CustomGPT (local) response JSON:", response);
     return response;
