@@ -39,15 +39,28 @@ export default function SearchResultsClient({ members, partnerships, calls, reso
         setData(res);
         console.log("CustomGPT Response:", res);
         console.log("✅ FULL API response:", res);
-        // Flatten all items from all sections
-        const data = res?.data || {};
-        const sectionKeys = Object.keys(data).filter(
-          (k) => data[k] && Array.isArray(data[k].items)
+        // Parse openai_response if present
+        let parsed = res?.data || {};
+        let parsedSections: any = {};
+        if (typeof parsed.openai_response === 'string') {
+          try {
+            parsedSections = JSON.parse(parsed.openai_response);
+            parsed = { ...parsed, ...parsedSections };
+          } catch (e) {
+            console.error('Failed to parse openai_response:', e);
+            parsedSections = {};
+          }
+        } else {
+          parsedSections = parsed;
+        }
+        // Flatten all items from all sections (fallback to any available structure)
+        const sectionKeys = Object.keys(parsedSections).filter(
+          (k) => parsedSections[k] && Array.isArray(parsedSections[k].items)
         );
         let allItems: any[] = [];
         let allSections: any[] = [];
         sectionKeys.forEach((key) => {
-          const section = data[key];
+          const section = parsedSections[key];
           if (Array.isArray(section.items) && section.items.length > 0) {
             allSections.push({
               key,

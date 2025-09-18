@@ -16,9 +16,13 @@ export default function ResultsPage() {
   const q = searchParams.get("query") || "";
   const [data, setData] = useState<ResultsData | null>(null);
   const [gptResult, setGptResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!q) return;
+    setLoading(true);
+    setError(null);
     // Replace with your actual API endpoint for results
     fetch(`/api/results?query=${encodeURIComponent(q)}`)
       .then((res) => res.json())
@@ -28,9 +32,12 @@ export default function ResultsPage() {
     fetchCustomGPTResults(q)
       .then((res) => {
         setGptResult(res);
+        setLoading(false);
       })
       .catch((err) => {
         setGptResult(null);
+        setLoading(false);
+        setError("CustomGPT error: " + (err?.message || err));
         console.error("CustomGPT error:", err);
         console.error("Fetch error:", err);
       });
@@ -38,15 +45,6 @@ export default function ResultsPage() {
 
   const members = data?.members ?? [];
   const categories = data?.categories ?? [];
-
-  if (!q) {
-    return <p>No query found</p>;
-  }
-  if (data) {
-    return <pre>{JSON.stringify(data, null, 2)}</pre>;
-  }
-  // fallback loading
-  return <p>Loading or no data yet...</p>;
 
   return (
     <div
@@ -66,6 +64,8 @@ export default function ResultsPage() {
         q={q}
         gptResult={gptResult}
       />
+      {loading && <div style={{color: 'white', textAlign: 'center', marginTop: 32}}>Loading...</div>}
+      {error && <div style={{color: 'red', textAlign: 'center', marginTop: 32}}>{error}</div>}
     </div>
   );
 }

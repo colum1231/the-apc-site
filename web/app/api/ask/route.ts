@@ -29,10 +29,11 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const { q = "" } = (await req.json().catch(() => ({}))) as AskPayload;
-
-  const apiKey = process.env.CUSTOMGPT_API_KEY;
-  const projectId = process.env.CUSTOMGPT_PROJECT_ID;
+  const body = (await req.json().catch(() => ({})));
+  const q = body.q || "";
+  // Prefer credentials from POST body, fallback to env
+  const apiKey = body.apiKey || process.env.CUSTOMGPT_API_KEY;
+  const projectId = body.projectId || process.env.CUSTOMGPT_PROJECT_ID;
 
   if (!apiKey || !projectId) {
     return Response.json(
