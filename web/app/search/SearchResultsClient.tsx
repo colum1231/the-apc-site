@@ -43,12 +43,35 @@ export default function SearchResultsClient({ members, partnerships, calls, reso
         let parsed = res?.data || {};
         let parsedSections: any = {};
         if (typeof parsed.openai_response === 'string') {
+          let raw = parsed.openai_response;
+          console.log('Raw openai_response:', raw);
           try {
-            parsedSections = JSON.parse(parsed.openai_response);
+            // Try direct parse
+            parsedSections = JSON.parse(raw);
             parsed = { ...parsed, ...parsedSections };
-          } catch (e) {
-            console.error('Failed to parse openai_response:', e);
-            parsedSections = {};
+          } catch (e1) {
+            // Try to fix common issues: trim, remove trailing non-JSON
+            try {
+              let fixed = raw.trim();
+              // Remove anything after the last closing brace/bracket
+              let lastCurly = fixed.lastIndexOf('}');
+              let lastSquare = fixed.lastIndexOf(']');
+              let cut = Math.max(lastCurly, lastSquare);
+              if (cut !== -1) fixed = fixed.slice(0, cut + 1);
+              parsedSections = JSON.parse(fixed);
+              parsed = { ...parsed, ...parsedSections };
+              console.warn('openai_response needed fixing before parse');
+            } catch (e2) {
+              // Try double-parse (if double-encoded)
+              try {
+                parsedSections = JSON.parse(JSON.parse(raw));
+                parsed = { ...parsed, ...parsedSections };
+                console.warn('openai_response was double-encoded');
+              } catch (e3) {
+                console.error('Failed to parse openai_response:', e1, e2, e3);
+                parsedSections = { _raw_openai_response: raw };
+              }
+            }
           }
         } else {
           parsedSections = parsed;
@@ -90,7 +113,7 @@ export default function SearchResultsClient({ members, partnerships, calls, reso
     e.preventDefault();
     const value = inputRef.current?.value || "";
     if (value.trim()) {
-      router.push(`/search?q=${encodeURIComponent(value)}`);
+      router.push(`/results?query=${encodeURIComponent(value)}`);
     }
   }
 

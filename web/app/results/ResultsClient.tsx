@@ -15,26 +15,61 @@ type Props = {
 };
 
 export default function ResultsClient({ members, categories, q, gptResult }: Props) {
-  const callTranscripts = categories.filter((c) => c.title === "Call Transcripts").slice(0, 1);
-  const resources = categories.filter((c) => c.title === "Resources").slice(0, 1);
-  const partnerships = categories.filter((c) => c.title === "Partnerships").slice(0, 1);
-  const events = categories.filter((c) => c.title === "Events").slice(0, 1);
+  // Parse and flatten CustomGPT results
+  let parsed = gptResult?.data || {};
+  let parsedSections: any = {};
+  if (typeof parsed.openai_response === 'string') {
+    try {
+      parsedSections = JSON.parse(parsed.openai_response);
+      parsed = { ...parsed, ...parsedSections };
+    } catch (e) {
+      console.error('Failed to parse openai_response:', e);
+      parsedSections = {};
+    }
+  } else {
+    parsedSections = parsed;
+  }
+  // Flatten all items from all sections (fallback to any available structure)
+  const sectionKeys = Object.keys(parsedSections).filter(
+    (k) => parsedSections[k] && Array.isArray(parsedSections[k].items)
+  );
+  let allSections: any[] = [];
+  sectionKeys.forEach((key) => {
+    const section = parsedSections[key];
+    if (Array.isArray(section.items) && section.items.length > 0) {
+      allSections.push({
+        key,
+        title: section.section_title || key,
+        url: section.section_url,
+        items: section.items,
+      });
+    }
+  });
 
   return (
     <main className="apc-results-main">
+      <div style={{ color: 'white', marginBottom: 24 }}>
+        <pre>{JSON.stringify(gptResult, null, 2)}</pre>
+      </div>
       <div className="apc-results-shell">
-        <section className="apc-results-left">
-          <MembersPaneClient initialItems={members} q={q} />
-        </section>
-        <section className="apc-results-right">
-          <div className="right-inner">
-            <RightSectionClient label="CALL TRANSCRIPTS" items={callTranscripts} href="/calls" data={gptResult} />
-            <RightSectionClient label="RESOURCES" items={resources} href="/resources" data={gptResult} />
-            <RightSectionClient label="PARTNERSHIPS" items={partnerships} href="/partnerships" data={gptResult} />
-            <RightSectionClient label="EVENTS" items={events} href="/events" data={gptResult} />
-            <div className="other-footer">OTHER</div>
-          </div>
-        </section>
+        {allSections.length > 0 ? (
+          allSections.map((section, sIdx) => (
+            <div key={section.key} style={{ marginBottom: 32 }}>
+              <div style={{ fontWeight: 'bold', fontSize: 20, color: '#ffd700', marginBottom: 8 }}>{section.title}</div>
+              {section.items.map((item: any, idx: number) => (
+                <div key={idx} style={{ padding: 12, borderBottom: '1px solid #444', color: 'white', marginBottom: 8 }}>
+                  {Object.entries(item).map(([k, v]) => (
+                    <div key={k} style={{ fontSize: 15, marginBottom: 2 }}>
+                      <span style={{ fontWeight: 600 }}>{k}:</span> <span>{String(v)}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ))
+        ) : (
+          <div style={{ color: 'white', textAlign: 'center', marginTop: 32 }}>No results found for this search.</div>
+        )}
       </div>
     </main>
   );
