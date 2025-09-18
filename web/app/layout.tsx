@@ -1,4 +1,6 @@
+
 import "./globals.css";
+import BodyWithPathname from "./components/BodyWithPathname";
 
 export const metadata = {
   title: "APC",
@@ -8,7 +10,9 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <BodyWithPathname>
+        {children}
+      </BodyWithPathname>
     </html>
   );
 }

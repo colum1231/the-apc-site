@@ -48,7 +48,9 @@ export default function RightSectionClient({
         aria-expanded={open}
         aria-label={`${label} section`}
       >
-        <span className="right-title">{label}</span>
+        <span className="right-title" style={{ fontWeight: 700, fontSize: "120%" }}>
+          {label}
+        </span>
         <span className="right-arrow">{open ? "▾" : "▸"}</span>
       </div>
 
@@ -68,7 +70,7 @@ export default function RightSectionClient({
                     target="_blank"
                     rel="noopener noreferrer"
                     className="right-card-title"
-                    style={{ fontWeight: "bold" }}
+                    style={{ fontWeight: 700, fontSize: "120%" }}
                   >
                     {title}
                   </a>
