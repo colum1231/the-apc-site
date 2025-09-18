@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import "./search.css"; // Add this import for layout styles
+// import "./search.css"; // Removed: file does not exist
 export const metadata: Metadata = { title: "Search • APC" };
 
 /** --- Types that match your API shape (keep loose) --- */
