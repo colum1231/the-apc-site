@@ -62,7 +62,7 @@ const RightSectionClient = dynamic(() => import("./RightSectionClient"), { ssr: 
 type Member = { name: string; industry?: string; quote?: string };
 type Item = { title: string; subtitle?: string; quote?: string; url?: string };
 
-type Props = {
+type SearchResultsClientProps = {
   members: Member[];
   partnerships: Item[];
   calls: Item[];
@@ -71,137 +71,182 @@ type Props = {
   q: string;
 };
 
-export default function SearchResultsClient({ members, partnerships, calls, resources, events, q }: Props) {
-  console.log("✅ SearchResultsClient mounted");
+export default function SearchResultsClient({ members, partnerships, calls, resources, events, q }: SearchResultsClientProps) {
   const router = useRouter();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [data, setData] = useState<any>(null);
-  const [results, setResults] = useState<any[]>([]);
-  const [sections, setSections] = useState<any[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [inputValue, setInputValue] = useState(q || "");
+  const [loading, setLoading] = useState(false);
+  const [resultsData, setResultsData] = useState<any>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Debug: log API response and mapped results
+  useEffect(() => {
+    if (resultsData !== null) {
+      // Log the raw API response
+      console.log("[SearchResultsClient] API response:", resultsData);
+      // Log the mapped categories
+      console.log("[SearchResultsClient] callsResults:", resultsData?.calls || resultsData?.call_recordings || []);
+      console.log("[SearchResultsClient] community:", resultsData?.community || resultsData?.community_chats || []);
+      console.log("[SearchResultsClient] partners:", resultsData?.partners || resultsData?.partnerships || []);
+      console.log("[SearchResultsClient] resourcesResults:", resultsData?.resources || []);
+    }
+  }, [resultsData]);
 
   useEffect(() => {
-    async function fetchResults() {
-      try {
-        console.log("Query is:", q);
-        console.log("Calling CustomGPT API...");
-        const res = await fetchCustomGPTResults(q);
-        console.log("✅ CustomGPT response:", res);
-        setData(res);
-        console.log("CustomGPT Response:", res);
-        console.log("✅ FULL API response:", res);
-        // Parse openai_response if present
-        let parsed = res?.data || {};
-        let parsedSections: any = {};
-        if (typeof parsed.openai_response === 'string') {
-          let raw = parsed.openai_response;
-          console.log('Raw openai_response:', raw);
-          try {
-            // Try direct parse
-            parsedSections = JSON.parse(raw);
-            parsed = { ...parsed, ...parsedSections };
-          } catch (e1) {
-            // Try to fix common issues: trim, remove trailing non-JSON
-            try {
-              let fixed = raw.trim();
-              // Remove anything after the last closing brace/bracket
-              let lastCurly = fixed.lastIndexOf('}');
-              let lastSquare = fixed.lastIndexOf(']');
-              let cut = Math.max(lastCurly, lastSquare);
-              if (cut !== -1) fixed = fixed.slice(0, cut + 1);
-              parsedSections = JSON.parse(fixed);
-              parsed = { ...parsed, ...parsedSections };
-              console.warn('openai_response needed fixing before parse');
-            } catch (e2) {
-              // Try double-parse (if double-encoded)
-              try {
-                parsedSections = JSON.parse(JSON.parse(raw));
-                parsed = { ...parsed, ...parsedSections };
-                console.warn('openai_response was double-encoded');
-              } catch (e3) {
-                console.error('Failed to parse openai_response:', e1, e2, e3);
-                parsedSections = { _raw_openai_response: raw };
-              }
-            }
-          }
-        } else {
-          parsedSections = parsed;
-        }
-        // Flatten all items from all sections (fallback to any available structure)
-        const sectionKeys = Object.keys(parsedSections).filter(
-          (k) => parsedSections[k] && Array.isArray(parsedSections[k].items)
-        );
-        let allItems: any[] = [];
-        let allSections: any[] = [];
-        sectionKeys.forEach((key) => {
-          const section = parsedSections[key];
-          if (Array.isArray(section.items) && section.items.length > 0) {
-            allSections.push({
-              key,
-              title: section.section_title || key,
-              url: section.section_url,
-              items: section.items,
-            });
-            allItems = allItems.concat(
-              section.items.map((item: any) => ({ ...item, _section: section.section_title || key, _sectionUrl: section.section_url }))
-            );
-          }
-        });
-        setResults(allItems);
-        setSections(allSections);
-        setError(null);
-      } catch (err: any) {
-        setError("Failed to fetch results.");
-        setResults([]);
-        setSections([]);
-        console.error("API fetch failed:", err);
-      }
-    }
-    fetchResults();
+    setInputValue(q || "");
+    setLoading(true);
+    setErrorMsg(null);
+    fetchCustomGPTResults(q)
+      .then((res) => {
+        setResultsData(res?.data || {});
+        setLoading(false);
+      })
+      .catch((err) => {
+        setErrorMsg("Failed to fetch results.");
+        setResultsData(null);
+        setLoading(false);
+      });
   }, [q]);
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const value = inputRef.current?.value || "";
-    if (value.trim()) {
-      router.push(`/results?query=${encodeURIComponent(value)}`);
-    }
-  }
+  // Extract categories
+  const callsResults = resultsData?.calls || resultsData?.call_recordings || [];
+  const community = resultsData?.community || resultsData?.community_chats || [];
+  const partners = resultsData?.partners || resultsData?.partnerships || [];
+  const resourcesResults = resultsData?.resources || [];
 
-  if (error) return <p style={{ color: 'red' }}>{error}</p>;
-  // If sections exist, use SectionList for rendering
-  if (sections && sections.length > 0) {
-    return <SectionList allSections={sections} />;
-  }
-  if (results && results.length === 0) return <p style={{ color: 'white' }}>No results found for this search.</p>;
-  if (!data) return <p style={{ color: 'white' }}>Loading...</p>;
+  // Card style
+  const cardStyle: React.CSSProperties = {
+    marginBottom: 24,
+    padding: 16,
+    border: "1px solid #eee",
+    borderRadius: 8,
+    background: "rgba(0,0,0,0.55)",
+    color: "#fff",
+    boxShadow: "0 2px 8px 0 rgba(0,0,0,0.12)",
+  };
+  const fadedStyle: React.CSSProperties = {
+    fontSize: 12,
+    opacity: 0.7,
+    marginTop: 8,
+    display: "block",
+  };
+
+  // Render category
+  const renderCategory = (items: any[], type: string, label: string) => {
+    if (!Array.isArray(items) || items.length === 0) return null;
+    return (
+      <section style={{ marginBottom: 32 }}>
+        <h2 style={{ fontWeight: 700, fontSize: 20, marginBottom: 12 }}>{label}</h2>
+        {items.map((item, idx) => {
+          if (type === "calls") {
+            return (
+              <div key={idx} style={cardStyle}>
+                <h3 style={{ fontWeight: 600, fontSize: 17 }}>{item.title || "Untitled"}</h3>
+                {item.quote && <p><i>{item.quote}</i></p>}
+                {item.context && <p>{item.context}</p>}
+                {item.url && <a href={item.url} target="_blank" rel="noopener noreferrer">{item.url}</a>}
+                {item.source && <span style={fadedStyle}>Source: {item.source}</span>}
+              </div>
+            );
+          } else if (type === "community") {
+            return (
+              <div key={idx} style={cardStyle}>
+                <h3 style={{ fontWeight: 600, fontSize: 17 }}>{item.title || "Untitled"}</h3>
+                {item.quote && <p><i>{item.quote}</i></p>}
+                {item.context && <p>{item.context}</p>}
+                {item.username && item.username_url && (
+                  <p>User: <a href={item.username_url} target="_blank" rel="noopener noreferrer">{item.username}</a></p>
+                )}
+                {item.source && <span style={fadedStyle}>Source: {item.source}</span>}
+              </div>
+            );
+          } else if (type === "partners") {
+            return (
+              <div key={idx} style={cardStyle}>
+                <h3 style={{ fontWeight: 600, fontSize: 17 }}>{item.title || "Untitled"}</h3>
+                {item.description && <p>{item.description}</p>}
+                {item.contact_line && <p>{item.contact_line}</p>}
+                {item.url && <a href={item.url} target="_blank" rel="noopener noreferrer">{item.url}</a>}
+                {item.source && <span style={fadedStyle}>Source: {item.source}</span>}
+              </div>
+            );
+          } else if (type === "resources") {
+            return (
+              <div key={idx} style={cardStyle}>
+                <h3 style={{ fontWeight: 600, fontSize: 17 }}>{item.title || "Untitled"}</h3>
+                {item.summary && <p>{item.summary}</p>}
+                {item.url && <a href={item.url} target="_blank" rel="noopener noreferrer">{item.url}</a>}
+                {item.source && <span style={fadedStyle}>Source: {item.source}</span>}
+              </div>
+            );
+          }
+          // fallback
+          return (
+            <div key={idx} style={cardStyle}>
+              <pre>{JSON.stringify(item, null, 2)}</pre>
+            </div>
+          );
+        })}
+      </section>
+    );
+  };
+
+  // --- Layout ---
+  const noResults =
+    !loading &&
+    !errorMsg &&
+    (!callsResults.length && !community.length && !partners.length && !resourcesResults.length);
 
   return (
-    <div style={{ color: 'white' }}>
-      <h2>SearchResultsClient Rendering</h2>
-      <pre>{JSON.stringify(data, null, 2)}</pre>
-      {Array.isArray(data?.answers) && data.answers.length > 0 ? (
-        data.answers.map((item, index) => (
-          <div
-            key={index}
+    <div style={{ display: "flex", height: "100vh", width: "100vw", background: "#18181b" }}>
+      {/* Left: Search Box */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 48, minWidth: 0, borderRight: "1px solid #222" }}>
+        <form
+          onSubmit={e => {
+            e.preventDefault();
+            if (inputValue.trim()) router.push(`/search?q=${encodeURIComponent(inputValue)}`);
+          }}
+          style={{ width: "100%", maxWidth: 400 }}
+        >
+          <input
+            type="text"
+            value={inputValue}
+            onChange={e => setInputValue(e.target.value)}
+            placeholder="What’s your next move?"
             style={{
-              marginBottom: 24,
-              padding: 16,
-              border: '1px solid white',
-              borderRadius: 6,
-              color: 'white',
+              width: "100%",
+              padding: "16px 24px",
+              borderRadius: 999,
+              border: "1px solid #444",
+              fontSize: 18,
+              background: "#23232a",
+              color: "#fff",
+              outline: "none",
+              marginBottom: 8,
+              boxShadow: "0 2px 8px 0 rgba(0,0,0,0.10)",
             }}
-          >
-            <h3>{item.title || "Untitled"}</h3>
-            <p>{item.answer}</p>
-            <span style={{ fontSize: 12, opacity: 0.7 }}>
-              {item.metadata?.type || "Other"}
-            </span>
-          </div>
-        ))
-      ) : (
-        <p style={{ color: 'white' }}>No results found for this query.</p>
-      )}
+            autoFocus
+          />
+        </form>
+        {errorMsg && <div style={{ color: "#f44", marginTop: 12 }}>{errorMsg}</div>}
+      </div>
+      {/* Right: Results */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: 48 }}>
+          {loading ? (
+            <div style={{ color: "#fff" }}>Loading...</div>
+          ) : (
+            <>
+              {renderCategory(callsResults, "calls", "Call Recordings")}
+              {renderCategory(community, "community", "Community Chats")}
+              {renderCategory(partners, "partners", "Partnerships")}
+              {renderCategory(resourcesResults, "resources", "Resources")}
+              {noResults && (
+                <p style={{ color: '#fff' }}>No results found for this query.</p>
+              )}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,1 +1,8 @@
 web/the-apc-site/
+node_modules/
+.next/
+out/
+build/
+.DS_Store
+.env*
+import { useFile } from "../components/useFile";
