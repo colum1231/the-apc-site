@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState } from "react";
 
 export default function HQ(){
   const [callRecordingsOpen, setCallRecordingsOpen] = useState(false);
@@ -15,7 +15,7 @@ export default function HQ(){
     setEventsOpen(category === 'events' ? !eventsOpen : false);
   };
 
-  // Check if any dropdown is open
+  // Check if any dropdown is open (for potential future use)
   const isAnyDropdownOpen = callRecordingsOpen || resourcesOpen || partnershipsOpen || eventsOpen;
 
   // Dummy asset arrays
@@ -45,8 +45,8 @@ export default function HQ(){
 
   return (
     <main className="hq-container">
-      <section className={`hq-content-wrapper ${isAnyDropdownOpen ? 'hq-content-wrapper--compact' : ''}`}>
-        <div className="hq-category">
+      <section className={`hq-content-wrapper ${isAnyDropdownOpen ? 'has-open-dropdown' : ''}`}>
+        <div className={`hq-category ${callRecordingsOpen ? 'expanded' : ''}`}>
           <div className="hq-category-header">
             <a href="https://www.notion.so/call-recordings-apc" target="_blank" rel="noopener noreferrer" className="hq-title-link">
               <h1 className="hq-title">CALL RECORDINGS</h1>
@@ -55,19 +55,17 @@ export default function HQ(){
               <span className={`hq-dropdown-arrow ${callRecordingsOpen ? 'open' : ''}`}>▼</span>
             </div>
           </div>
-          {callRecordingsOpen && (
-            <div className="hq-dropdown">
-              {callRecordingsAssets.map((asset, index) => (
-                <div key={index} className="hq-asset-item">
-                  <a href={asset.url} className="hq-asset-link">{asset.title}</a>
-                  <div className="hq-asset-subtitle">{asset.subtitle}</div>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className={`hq-dropdown ${callRecordingsOpen ? 'open' : ''}`}>
+            {callRecordingsAssets.map((asset, index) => (
+              <div key={index} className="hq-asset-item">
+                <a href={asset.url} className="hq-asset-link">{asset.title}</a>
+                <div className="hq-asset-subtitle">{asset.subtitle}</div>
+              </div>
+            ))}
+          </div>
         </div>
         
-        <div className="hq-category">
+        <div className={`hq-category ${resourcesOpen ? 'expanded' : ''}`}>
           <div className="hq-category-header">
             <a href="https://www.notion.so/resources-apc" target="_blank" rel="noopener noreferrer" className="hq-title-link">
               <h1 className="hq-title">RESOURCES</h1>
@@ -76,19 +74,17 @@ export default function HQ(){
               <span className={`hq-dropdown-arrow ${resourcesOpen ? 'open' : ''}`}>▼</span>
             </div>
           </div>
-          {resourcesOpen && (
-            <div className="hq-dropdown">
-              {resourcessAssets.map((asset, index) => (
-                <div key={index} className="hq-asset-item">
-                  <a href={asset.url} className="hq-asset-link">{asset.title}</a>
-                  <div className="hq-asset-subtitle">{asset.subtitle}</div>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className={`hq-dropdown ${resourcesOpen ? 'open' : ''}`}>
+            {resourcessAssets.map((asset, index) => (
+              <div key={index} className="hq-asset-item">
+                <a href={asset.url} className="hq-asset-link">{asset.title}</a>
+                <div className="hq-asset-subtitle">{asset.subtitle}</div>
+              </div>
+            ))}
+          </div>
         </div>
         
-        <div className="hq-category">
+        <div className={`hq-category ${partnershipsOpen ? 'expanded' : ''}`}>
           <div className="hq-category-header">
             <a href="https://www.notion.so/partnerships-apc" target="_blank" rel="noopener noreferrer" className="hq-title-link">
               <h1 className="hq-title">PARTNERSHIPS</h1>
@@ -97,19 +93,17 @@ export default function HQ(){
               <span className={`hq-dropdown-arrow ${partnershipsOpen ? 'open' : ''}`}>▼</span>
             </div>
           </div>
-          {partnershipsOpen && (
-            <div className="hq-dropdown">
-              {partnershipsAssets.map((asset, index) => (
-                <div key={index} className="hq-asset-item">
-                  <a href={asset.url} className="hq-asset-link">{asset.title}</a>
-                  <div className="hq-asset-subtitle">{asset.subtitle}</div>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className={`hq-dropdown ${partnershipsOpen ? 'open' : ''}`}>
+            {partnershipsAssets.map((asset, index) => (
+              <div key={index} className="hq-asset-item">
+                <a href={asset.url} className="hq-asset-link">{asset.title}</a>
+                <div className="hq-asset-subtitle">{asset.subtitle}</div>
+              </div>
+            ))}
+          </div>
         </div>
         
-        <div className="hq-category">
+        <div className={`hq-category ${eventsOpen ? 'expanded' : ''}`}>
           <div className="hq-category-header">
             <a href="https://www.notion.so/events-apc" target="_blank" rel="noopener noreferrer" className="hq-title-link">
               <h1 className="hq-title">EVENTS</h1>
@@ -118,16 +112,14 @@ export default function HQ(){
               <span className={`hq-dropdown-arrow ${eventsOpen ? 'open' : ''}`}>▼</span>
             </div>
           </div>
-          {eventsOpen && (
-            <div className="hq-dropdown">
-              {eventsAssets.map((asset, index) => (
-                <div key={index} className="hq-asset-item">
-                  <a href={asset.url} className="hq-asset-link">{asset.title}</a>
-                  <div className="hq-asset-subtitle">{asset.subtitle}</div>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className={`hq-dropdown ${eventsOpen ? 'open' : ''}`}>
+            {eventsAssets.map((asset, index) => (
+              <div key={index} className="hq-asset-item">
+                <a href={asset.url} className="hq-asset-link">{asset.title}</a>
+                <div className="hq-asset-subtitle">{asset.subtitle}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     </main>
