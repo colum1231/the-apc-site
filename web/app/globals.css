@@ -314,7 +314,8 @@ html, body{background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed
   flex-direction: column;
   align-items: stretch;
   gap: 7.5rem;
-  transition: gap 1s ease-in-out;
+  transition: gap 0.5s ease-out;
+  will-change: gap;
 }
 
 .hq-content-wrapper--compact {
@@ -325,6 +326,8 @@ html, body{background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed
   width: 100%;
   max-width: 975px;
   text-align: left;
+  flex-shrink: 0;
+  transform: translateZ(0);
 }
 
 .hq-category-header {
@@ -371,7 +374,7 @@ html, body{background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed
 
 .hq-title {
   font-size: 1.2rem;  /* Reduced by 50% from 2rem */
-  font-weight: bold;
+  font-weight: 600;
   color: #d6d6d6;
   margin-bottom: 0;  /* No margin, let dropdown handle spacing */
   letter-spacing: 0.05em;

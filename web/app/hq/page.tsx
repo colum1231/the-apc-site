@@ -55,17 +55,17 @@ export default function HQ(){
               <span className={`hq-dropdown-arrow ${callRecordingsOpen ? 'open' : ''}`}>▼</span>
             </div>
           </div>
+          {callRecordingsOpen && (
+            <div className="hq-dropdown">
+              {callRecordingsAssets.map((asset, index) => (
+                <div key={index} className="hq-asset-item">
+                  <a href={asset.url} className="hq-asset-link">{asset.title}</a>
+                  <div className="hq-asset-subtitle">{asset.subtitle}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-        {callRecordingsOpen && (
-          <div className="hq-dropdown">
-            {callRecordingsAssets.map((asset, index) => (
-              <div key={index} className="hq-asset-item">
-                <a href={asset.url} className="hq-asset-link">{asset.title}</a>
-                <div className="hq-asset-subtitle">{asset.subtitle}</div>
-              </div>
-            ))}
-          </div>
-        )}
         
         <div className="hq-category">
           <div className="hq-category-header">
@@ -76,17 +76,17 @@ export default function HQ(){
               <span className={`hq-dropdown-arrow ${resourcesOpen ? 'open' : ''}`}>▼</span>
             </div>
           </div>
+          {resourcesOpen && (
+            <div className="hq-dropdown">
+              {resourcessAssets.map((asset, index) => (
+                <div key={index} className="hq-asset-item">
+                  <a href={asset.url} className="hq-asset-link">{asset.title}</a>
+                  <div className="hq-asset-subtitle">{asset.subtitle}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-        {resourcesOpen && (
-          <div className="hq-dropdown">
-            {resourcessAssets.map((asset, index) => (
-              <div key={index} className="hq-asset-item">
-                <a href={asset.url} className="hq-asset-link">{asset.title}</a>
-                <div className="hq-asset-subtitle">{asset.subtitle}</div>
-              </div>
-            ))}
-          </div>
-        )}
         
         <div className="hq-category">
           <div className="hq-category-header">
@@ -97,17 +97,17 @@ export default function HQ(){
               <span className={`hq-dropdown-arrow ${partnershipsOpen ? 'open' : ''}`}>▼</span>
             </div>
           </div>
+          {partnershipsOpen && (
+            <div className="hq-dropdown">
+              {partnershipsAssets.map((asset, index) => (
+                <div key={index} className="hq-asset-item">
+                  <a href={asset.url} className="hq-asset-link">{asset.title}</a>
+                  <div className="hq-asset-subtitle">{asset.subtitle}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-        {partnershipsOpen && (
-          <div className="hq-dropdown">
-            {partnershipsAssets.map((asset, index) => (
-              <div key={index} className="hq-asset-item">
-                <a href={asset.url} className="hq-asset-link">{asset.title}</a>
-                <div className="hq-asset-subtitle">{asset.subtitle}</div>
-              </div>
-            ))}
-          </div>
-        )}
         
         <div className="hq-category">
           <div className="hq-category-header">
@@ -118,17 +118,17 @@ export default function HQ(){
               <span className={`hq-dropdown-arrow ${eventsOpen ? 'open' : ''}`}>▼</span>
             </div>
           </div>
+          {eventsOpen && (
+            <div className="hq-dropdown">
+              {eventsAssets.map((asset, index) => (
+                <div key={index} className="hq-asset-item">
+                  <a href={asset.url} className="hq-asset-link">{asset.title}</a>
+                  <div className="hq-asset-subtitle">{asset.subtitle}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-        {eventsOpen && (
-          <div className="hq-dropdown">
-            {eventsAssets.map((asset, index) => (
-              <div key={index} className="hq-asset-item">
-                <a href={asset.url} className="hq-asset-link">{asset.title}</a>
-                <div className="hq-asset-subtitle">{asset.subtitle}</div>
-              </div>
-            ))}
-          </div>
-        )}
       </section>
     </main>
   );
