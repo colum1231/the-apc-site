@@ -331,13 +331,8 @@ html, body{background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed
   display: flex;
   align-items: center;
   justify-content: space-between;
-  transition: opacity 0.3s ease;
   margin-bottom: 0.1rem;
   position: relative;
-}
-
-.hq-category-header:hover {
-  opacity: 0.8;
 }
 
 .hq-dropdown-trigger {
@@ -346,19 +341,13 @@ html, body{background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.3s ease;
   position: absolute;
   right: 0;
-}
-
-.hq-dropdown-trigger:hover {
-  opacity: 0.7;
 }
 
 .hq-dropdown-arrow {
   font-size: 1rem;
   color: white;
-  transition: transform 0.3s ease;
   margin-left: 1rem;
   flex-shrink: 0;
 }
@@ -395,27 +384,13 @@ html, body{background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed
   padding: 0rem 0;  /* Minimal space between title and first asset */
   padding-left: 2.25rem;
   margin-bottom: 1rem;  /* Space between categories */
-  animation: slideDown 0.75s ease-out;
 }
 
 .hq-asset-item {
   margin-bottom: 0.95rem;  /* Cut spacing between assets in half */
   padding-bottom: 0.95rem;  /* Cut padding between assets in half */
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  opacity: 0;
-  animation: fadeInAsset 0.4s ease-out forwards;
-}
-
-.hq-asset-item:nth-child(1) {
-  animation-delay: 0.175s;
-}
-
-.hq-asset-item:nth-child(2) {
-  animation-delay: 0.475s;
-}
-
-.hq-asset-item:nth-child(3) {
-  animation-delay: 0.775s;
+  opacity: 1;
 }
 
 .hq-asset-item:last-child {
@@ -432,7 +407,6 @@ html, body{background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed
   text-decoration: none;
   margin-bottom: 4px;  /* Tighter spacing between title and subtitle */
   letter-spacing: 0.02em;
-  transition: color 0.2s ease;
 }
 
 .hq-asset-link:hover {
@@ -448,24 +422,3 @@ html, body{background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed
   font-weight: 400;
 }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeInAsset {
-  from {
-    opacity: 0;
-    transform: translateY(15px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
