@@ -7,7 +7,7 @@
   position: fixed;
   inset: 0;
   background: #000 url("/res+cat_back.jpg") center/cover no-repeat;
-  z-index: 0;
+  z-index: 1;
 }
 
 .landing-fade {
@@ -42,6 +42,7 @@
   justify-content: center;
   transform: translateX(-50%) translateY(100px);
   animation: search-fade-slide-in 2s cubic-bezier(0.4,0,0.2,1) 0.75s forwards;
+  z-index: 3;
 }
 
 @keyframes search-fade-slide-in {
@@ -57,7 +58,7 @@
 /* ===== Landing — keep as you have it (known-good) ===== */
 :root{
   --outline:#545454;
-  --hq-color:#272727;
+  --hq-color:#404040;
   --apc-text:#8b8989;
 
   /* Results layout */
@@ -77,30 +78,31 @@ body,input,button,a{font-family:"Helvetica Neue", Helvetica, Arial, sans-serif;}
 /* Landing bg */
 html, body{background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed;}
 
-/* Landing (logo/search/HQ) — unchanged */
-.landing-wrap{position:fixed;inset:0;background:#000 url("/res+cat_back.jpg") center/cover no-repeat;}
+/* Landing (logo/search/HQ) — using animated versions above */
 .logo{position:fixed;top:97.5px;left:50%;transform:translateX(-50%);width:120px;height:auto;}
-.search{position:fixed;top:400px;left:50%;transform:translateX(-50%);width:475px;height:42.5px;display:flex;align-items:center;justify-content:center;}
-.input{width:100%;height:100%;border:1px solid var(--outline);border-radius:999px;background:transparent;color:#202020;text-align:center;font-size:14.5px;outline:none;padding:0 28px;}
-.input::placeholder{color:var(--outline);opacity:.6;transition:opacity .15s ease;}
+.input{width:100%;height:100%;border:1px solid var(--outline);border-radius:999px;background:transparent;color:#545454;text-align:center;font-size:14.5px;outline:none;padding:0 28px;}
+.input::placeholder{color:#545454;opacity:1;transition:opacity .15s ease;}
 .input:focus::placeholder{opacity:0;}
 
 
 .hq {
   position: fixed;
   left: 50%;
-  transform: translateX(-50%) translateY(100px);
   bottom: 28px;
-  font-size: 18px;
+  font-size: 14px;
+  font-weight: 550;
   color: var(--hq-color);
-  opacity: .5;
+  opacity: 0;
   text-decoration: none;
+  transform: translateX(-50%) translateY(100px);
   animation: hq-fade-slide-in 2s cubic-bezier(0.4,0,0.2,1) 1.2s forwards;
+  z-index: 3;
+  transition: font-size 2.5s ease, color 2.5s ease;
 }
 .hq:hover {
-  opacity: .8;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  font-size: 15px;
+  color: #707070;
+  text-decoration: none;
 }
 
 
@@ -110,7 +112,7 @@ html, body{background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed
     transform: translateX(-50%) translateY(100px);
   }
   to {
-    opacity: .5;
+    opacity: 0.8;
     transform: translateX(-50%) translateY(0);
   }
 }
@@ -121,7 +123,7 @@ html, body{background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed
   height:100vh;            /* lock viewport */
   overflow:hidden;         /* page itself never scrolls */
   color:var(--apc-text);
-  background:transparent;  /* no dark overlay over bg */
+  background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed;
 }
 
 /* Two equal halves inside a 1920px shell */
@@ -268,4 +270,33 @@ html, body{background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed
 @media (max-width:1200px){
   .results-shell{grid-template-columns:1fr;}
   .left-inner,.right-inner{width:min(740px,96%);margin:0 24px;}
+}
+
+/* ===== Logo Overlay ===== */
+.logo-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, calc(-50% - 250px)) scale(0.2);
+  z-index: 2;
+  opacity: 0;
+  animation: logo-fade-in 3s cubic-bezier(0.4,0,0.2,1) 3s forwards;
+}
+
+@keyframes logo-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ===== HQ Page ===== */
+.hq-title {
+  font-size: 3rem;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 2rem;
+  letter-spacing: 0.05em;
 }

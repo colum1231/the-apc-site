@@ -14,6 +14,9 @@ export default function Home() {
       {/* Black overlay for fade effect */}
       {showFade && <div className="landing-fade" aria-hidden="true" />}
 
+      {/* Centered logo overlay */}
+      <img src="/aplayers-mark.png" alt="APlayers Mark" className="logo-overlay" />
+
       <form action="/search" method="get" className="search" role="search">
         <input
           className="input"
@@ -24,7 +27,7 @@ export default function Home() {
         />
       </form>
 
-      <a href="/hq" className="hq">Go to HQ</a>
+      <a href="/hq" className="hq">GO TO HQ</a>
     </main>
   );
 }
