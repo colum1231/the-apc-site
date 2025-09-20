@@ -144,3 +144,63 @@ events: 0 []
  GET /search?q=james+hyland&id=8995d57d-80b9-41f5-bc53-cdd4eb5ecc03&vscodeBrowserReqId=1758407489075 200 in 85ms
  ✓ Compiled in 574ms (825 modules)
  POST /api/ask 200 in 6698ms
+ ✓ Compiled in 3.9s (813 modules)
+ ✓ Compiled in 820ms (813 modules)
+ ✓ Compiled in 1173ms (813 modules)
+ ✓ Compiled in 897ms (813 modules)
+ ✓ Compiled in 861ms (813 modules)
+ ✓ Compiled in 943ms (813 modules)
+ ✓ Compiled in 1623ms (813 modules)
+ ✓ Compiled in 1493ms (813 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/workspaces/the-apc-site/web/.next/cache/webpack/server-development__compiler2__/0.pack_' -> '/workspaces/the-apc-site/web/.next/cache/webpack/server-development__compiler2__/0.pack'
+ ✓ Compiled in 804ms (813 modules)
+ ✓ Compiled in 1384ms (813 modules)
+ ⨯ ./app/search/SearchResultsClient.tsx
+Error:   [31mx[0m Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+     ,-[[36;1;4m/workspaces/the-apc-site/web/app/search/SearchResultsClient.tsx[0m:414:1]
+ [2m411[0m |             </div>
+ [2m412[0m |             
+ [2m413[0m |             {/* RESOURCES CATEGORY */}
+ [2m414[0m |                         }
+     : [35;1m                        ^[0m
+ [2m415[0m |             
+ [2m416[0m |             <div style={{ background: "yellow", color: "black", padding: "10px", margin: "20px 0" }}>
+ [2m417[0m |               DEBUG: RESOURCES CATEGORY SHOULD BE BELOW THIS
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/search/SearchResultsClient.tsx
+./app/search/SearchPageClient.tsx
+ ✓ Compiled in 1399ms (813 modules)
+ ✓ Compiled in 2.3s (813 modules)
+ ✓ Compiled in 1776ms (813 modules)
+ ✓ Compiled in 819ms (813 modules)
+ ✓ Compiled in 1233ms (813 modules)
+ ✓ Compiled in 1684ms (813 modules)
+ ✓ Compiled in 995ms (813 modules)
+ ✓ Compiled in 982ms (813 modules)
+ ✓ Compiled in 692ms (813 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/workspaces/the-apc-site/web/.next/cache/webpack/client-development__compiler1__/5.pack_' -> '/workspaces/the-apc-site/web/.next/cache/webpack/client-development__compiler1__/5.pack'
+ ✓ Compiled in 3.5s (813 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/workspaces/the-apc-site/web/.next/cache/webpack/server-development__compiler2__/2.pack_' -> '/workspaces/the-apc-site/web/.next/cache/webpack/server-development__compiler2__/2.pack'
+ ✓ Compiled in 1788ms (813 modules)
+ ✓ Compiled in 1705ms (813 modules)
+ ✓ Compiled in 963ms (813 modules)
+ ✓ Compiled in 1144ms (813 modules)
+ ✓ Compiled in 1055ms (813 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/workspaces/the-apc-site/web/.next/cache/webpack/client-development__compiler1__/4.pack_' -> '/workspaces/the-apc-site/web/.next/cache/webpack/client-development__compiler1__/4.pack'
+ ✓ Compiled in 890ms (813 modules)
+ ✓ Compiled in 1117ms (813 modules)
+ ✓ Compiled in 2.2s (813 modules)
+ ✓ Compiled in 1877ms (813 modules)
+ ✓ Compiled in 1163ms (813 modules)
+ ✓ Compiled in 1697ms (813 modules)
+ ✓ Compiled in 1024ms (813 modules)
+ ✓ Compiled in 1045ms (813 modules)
+ ✓ Compiled in 939ms (813 modules)
+ ✓ Compiled in 1266ms (813 modules)
+ ✓ Compiled in 1009ms (813 modules)
+ ✓ Compiled in 936ms (813 modules)

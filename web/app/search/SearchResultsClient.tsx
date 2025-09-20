@@ -27,10 +27,10 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Right column category states (HQ-style dropdowns)
-  const [callRecordingsOpen, setCallRecordingsOpen] = useState(true);
-  const [resourcesOpen, setResourcesOpen] = useState(true);
-  const [partnershipsOpen, setPartnershipsOpen] = useState(true);
-  const [eventsOpen, setEventsOpen] = useState(true);
+  const [callRecordingsOpen, setCallRecordingsOpen] = useState(false);
+  const [resourcesOpen, setResourcesOpen] = useState(false);
+  const [partnershipsOpen, setPartnershipsOpen] = useState(false);
+  const [eventsOpen, setEventsOpen] = useState(false);
 
   // Exclusive dropdown behavior
   const toggleCategory = (category: string) => {
@@ -192,26 +192,34 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
         )}
 
         {/* TEMPORARY DEBUG INFO */}
-        {resultsData && (
-          <div style={{ 
-            position: "absolute", 
-            top: "160px", 
-            left: "20px", 
-            color: "#888", 
-            fontSize: "12px",
-            background: "rgba(0,0,0,0.8)",
-            padding: "10px",
-            borderRadius: "4px",
-            maxWidth: "300px"
-          }}>
-            <div>Data loaded: {Object.keys(resultsData).join(', ')}</div>
-            <div>Transcripts: {transcripts.length}</div>
-            <div>Community: {communityChats.length}</div>
-            <div>Resources: {resources.length}</div>
-            <div>Partnerships: {partnerships.length}</div>
-            <div>Events: {events.length}</div>
-          </div>
-        )}
+        <div style={{ 
+          position: "absolute", 
+          top: "160px", 
+          left: "20px", 
+          color: "#888", 
+          fontSize: "10px",
+          background: "rgba(0,0,0,0.9)",
+          padding: "10px",
+          borderRadius: "4px",
+          maxWidth: "400px",
+          maxHeight: "200px",
+          overflow: "auto",
+          zIndex: 1000
+        }}>
+          <div><strong>Loading:</strong> {loading ? 'YES' : 'NO'}</div>
+          <div><strong>Error:</strong> {errorMsg || 'None'}</div>
+          <div><strong>Raw Data Keys:</strong> {resultsData ? Object.keys(resultsData).join(', ') : 'null'}</div>
+          <div><strong>Transcripts:</strong> {transcripts.length}</div>
+          <div><strong>Community:</strong> {communityChats.length}</div>
+          <div><strong>Resources:</strong> {resources.length}</div>
+          <div><strong>Partnerships:</strong> {partnerships.length}</div>
+          <div><strong>Events:</strong> {events.length}</div>
+          {resultsData && (
+            <div style={{ marginTop: "8px", fontSize: "9px", color: "#666" }}>
+              <strong>Sample Keys:</strong> {JSON.stringify(Object.keys(resultsData)).substring(0, 100)}...
+            </div>
+          )}
+        </div>
         
         {/* MEMBERS RESULTS SECTION */}
         <div style={{ 
@@ -336,24 +344,31 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
         flex: 1, 
         display: "flex", 
         flexDirection: "column", 
-        height: "100vh", 
-        overflow: "hidden" 
+        minHeight: "100vh", 
+        overflow: "visible" 
       }}>
         <div style={{ 
           flex: 1, 
-          overflowY: "auto", 
-          padding: 48 
+          overflowY: "visible", 
+          padding: 48,
+          minHeight: "auto"
         }}>
+          
+          {/* SUPER VISIBLE DEBUG */}
+          <div style={{ background: "red", color: "white", padding: "20px", margin: "10px 0", fontSize: "20px" }}>
+            DEBUG: Right column content starts here
+          </div>
+          
           <div className={`hq-content-wrapper ${isAnyDropdownOpen ? 'has-open-dropdown' : ''}`}>
             
             {/* CALL RECORDINGS CATEGORY */}
-            <div className={`hq-category ${callRecordingsOpen ? 'expanded' : ''}`}>
+            <div className={`hq-category ${callRecordingsOpen ? 'expanded' : ''}`} style={{ marginBottom: "30px" }}>
               <div className="hq-category-header">
-                <a href="https://www.notion.so/call-recordings-apc" target="_blank" rel="noopener noreferrer" className="hq-title-link">
-                  <h1 className="hq-title">CALL RECORDINGS ({callResults?.length || 0})</h1>
+                <a href="https://www.notion.so/call-recordings-apc" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+                  <h1 style={{ color: "#ffffff", fontSize: "20px", fontWeight: "bold", margin: "0", padding: "10px", background: "rgba(255,0,0,0.3)" }}>CALL RECORDINGS ({callResults?.length || 0})</h1>
                 </a>
-                <div className="hq-dropdown-trigger" onClick={() => toggleCategory('callRecordings')}>
-                  <span className={`hq-dropdown-arrow ${callRecordingsOpen ? 'open' : ''}`}>▼</span>
+                <div onClick={() => toggleCategory('callRecordings')} style={{ cursor: "pointer", padding: "10px" }}>
+                  <span style={{ color: "#ffffff", fontSize: "20px", background: "rgba(0,0,0,0.5)", padding: "5px" }}>▼</span>
                 </div>
               </div>
               <div className={`hq-dropdown ${callRecordingsOpen ? 'open' : ''}`}>
@@ -395,14 +410,18 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
               </div>
             </div>
             
+            <div style={{ background: "yellow", color: "black", padding: "10px", margin: "20px 0" }}>
+              DEBUG: RESOURCES CATEGORY SHOULD BE BELOW THIS
+            </div>
+            
             {/* RESOURCES CATEGORY */}
-            <div className={`hq-category ${resourcesOpen ? 'expanded' : ''}`}>
+            <div className={`hq-category ${resourcesOpen ? 'expanded' : ''}`} style={{ border: "1px solid red", margin: "10px 0", opacity: 1, visibility: "visible" }}>
               <div className="hq-category-header">
-                <a href="https://www.notion.so/resources-apc" target="_blank" rel="noopener noreferrer" className="hq-title-link">
-                  <h1 className="hq-title">RESOURCES ({resourceResults?.length || 0})</h1>
+                <a href="https://www.notion.so/resources-apc" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+                  <h1 style={{ color: "#ffffff", fontSize: "20px", fontWeight: "bold", margin: "0", padding: "10px", background: "rgba(255,0,0,0.3)" }}>RESOURCES ({resourceResults?.length || 0})</h1>
                 </a>
-                <div className="hq-dropdown-trigger" onClick={() => toggleCategory('resources')}>
-                  <span className={`hq-dropdown-arrow ${resourcesOpen ? 'open' : ''}`}>▼</span>
+                <div onClick={() => toggleCategory('resources')} style={{ cursor: "pointer", padding: "10px" }}>
+                  <span style={{ color: "#ffffff", fontSize: "20px", background: "rgba(0,0,0,0.5)", padding: "5px" }}>▼</span>
                 </div>
               </div>
               <div className={`hq-dropdown ${resourcesOpen ? 'open' : ''}`}>
@@ -437,14 +456,18 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
               </div>
             </div>
             
+            <div style={{ background: "blue", color: "white", padding: "10px", margin: "20px 0" }}>
+              DEBUG: PARTNERSHIPS CATEGORY SHOULD BE BELOW THIS
+            </div>
+            
             {/* PARTNERSHIPS CATEGORY */}
-            <div className={`hq-category ${partnershipsOpen ? 'expanded' : ''}`}>
+            <div className={`hq-category ${partnershipsOpen ? 'expanded' : ''}`} style={{ border: "1px solid blue", margin: "10px 0", opacity: 1, visibility: "visible" }}>
               <div className="hq-category-header">
-                <a href="https://www.notion.so/partnerships-apc" target="_blank" rel="noopener noreferrer" className="hq-title-link">
-                  <h1 className="hq-title">PARTNERSHIPS ({partnerResults?.length || 0})</h1>
+                <a href="https://www.notion.so/partnerships-apc" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+                  <h1 style={{ color: "#ffffff", fontSize: "20px", fontWeight: "bold", margin: "0", padding: "10px", background: "rgba(0,0,255,0.3)" }}>PARTNERSHIPS ({partnerResults?.length || 0})</h1>
                 </a>
-                <div className="hq-dropdown-trigger" onClick={() => toggleCategory('partnerships')}>
-                  <span className={`hq-dropdown-arrow ${partnershipsOpen ? 'open' : ''}`}>▼</span>
+                <div onClick={() => toggleCategory('partnerships')} style={{ cursor: "pointer", padding: "10px" }}>
+                  <span style={{ color: "#ffffff", fontSize: "20px", background: "rgba(0,0,0,0.5)", padding: "5px" }}>▼</span>
                 </div>
               </div>
               <div className={`hq-dropdown ${partnershipsOpen ? 'open' : ''}`}>
@@ -491,14 +514,18 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
               </div>
             </div>
             
+            <div style={{ background: "green", color: "white", padding: "10px", margin: "20px 0" }}>
+              DEBUG: EVENTS CATEGORY SHOULD BE BELOW THIS
+            </div>
+            
             {/* EVENTS CATEGORY */}
-            <div className={`hq-category ${eventsOpen ? 'expanded' : ''}`}>
+            <div className={`hq-category ${eventsOpen ? 'expanded' : ''}`} style={{ border: "1px solid green", margin: "10px 0", opacity: 1, visibility: "visible" }}>
               <div className="hq-category-header">
-                <a href="https://www.notion.so/events-apc" target="_blank" rel="noopener noreferrer" className="hq-title-link">
-                  <h1 className="hq-title">EVENTS ({eventResults?.length || 0})</h1>
+                <a href="https://www.notion.so/events-apc" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+                  <h1 style={{ color: "#ffffff", fontSize: "20px", fontWeight: "bold", margin: "0", padding: "10px", background: "rgba(0,255,0,0.3)" }}>EVENTS ({eventResults?.length || 0})</h1>
                 </a>
-                <div className="hq-dropdown-trigger" onClick={() => toggleCategory('events')}>
-                  <span className={`hq-dropdown-arrow ${eventsOpen ? 'open' : ''}`}>▼</span>
+                <div onClick={() => toggleCategory('events')} style={{ cursor: "pointer", padding: "10px" }}>
+                  <span style={{ color: "#ffffff", fontSize: "20px", background: "rgba(0,0,0,0.5)", padding: "5px" }}>▼</span>
                 </div>
               </div>
               <div className={`hq-dropdown ${eventsOpen ? 'open' : ''}`}>
