@@ -1,5 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useDropdownHeight } from "../hooks/useDropdownHeight";
+import DropdownAssets from "../components/DropdownAssets";
 
 export default function HQ(){
   const [callRecordingsOpen, setCallRecordingsOpen] = useState(false);
@@ -7,16 +9,83 @@ export default function HQ(){
   const [partnershipsOpen, setPartnershipsOpen] = useState(false);
   const [eventsOpen, setEventsOpen] = useState(false);
 
-  // Function to handle exclusive dropdown behavior
+  // Ref for the last category to ensure it stays visible
+  const lastCategoryRef = useRef<HTMLDivElement>(null);
+
+  // Custom hooks for smooth dropdown height animations
+  const callRecordingsDropdown = useDropdownHeight(callRecordingsOpen);
+  const resourcesDropdown = useDropdownHeight(resourcesOpen);
+  const partnershipsDropdown = useDropdownHeight(partnershipsOpen);
+  const eventsDropdown = useDropdownHeight(eventsOpen);
+
+  // Function to handle exclusive dropdown behavior with smooth collapse timing
   const toggleCategory = (category: string) => {
-    setCallRecordingsOpen(category === 'callRecordings' ? !callRecordingsOpen : false);
-    setResourcesOpen(category === 'resources' ? !resourcesOpen : false);
-    setPartnershipsOpen(category === 'partnerships' ? !partnershipsOpen : false);
-    setEventsOpen(category === 'events' ? !eventsOpen : false);
+    const isCurrentlyOpen = 
+      (category === 'callRecordings' && callRecordingsOpen) ||
+      (category === 'resources' && resourcesOpen) ||
+      (category === 'partnerships' && partnershipsOpen) ||
+      (category === 'events' && eventsOpen);
+
+    if (isCurrentlyOpen) {
+      // CLOSING: First close the dropdown, let margins animate naturally
+      setCallRecordingsOpen(false);
+      setResourcesOpen(false);
+      setPartnershipsOpen(false);
+      setEventsOpen(false);
+    } else {
+      // OPENING: Close others first, then open the selected one
+      setCallRecordingsOpen(category === 'callRecordings');
+      setResourcesOpen(category === 'resources');
+      setPartnershipsOpen(category === 'partnerships');
+      setEventsOpen(category === 'events');
+    }
   };
 
-  // Check if any dropdown is open (for potential future use)
+  // Check if any dropdown is open and track which one
   const isAnyDropdownOpen = callRecordingsOpen || resourcesOpen || partnershipsOpen || eventsOpen;
+  
+  // Effect to ensure last category stays visible when dropdowns open
+  useEffect(() => {
+    if (isAnyDropdownOpen && lastCategoryRef.current) {
+      // Scroll the last category into view if it's hidden
+      setTimeout(() => {
+        lastCategoryRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'end',
+          inline: 'nearest'
+        });
+      }, 100); // Small delay to let layout settle
+    }
+  }, [isAnyDropdownOpen]);
+  
+  // Get the index of the currently active dropdown (-1 if none open)
+  const getActiveDropdownIndex = () => {
+    if (callRecordingsOpen) return 0;
+    if (resourcesOpen) return 1;
+    if (partnershipsOpen) return 2;
+    if (eventsOpen) return 3;
+    return -1;
+  };
+
+  const activeDropdownIndex = getActiveDropdownIndex();
+
+  // Calculate dynamic spacing for categories below active dropdown
+  const calculateCategorySpacing = (currentIndex: number) => {
+    // Base margin between categories (default spacing)
+    const baseCategorySpacing = '1.5rem';
+    
+    // Moderate extra spacing for dropdown content (much smaller)
+    const dropdownSpaceNeeded = '3rem';
+    
+    // Only add extra spacing if:
+    // 1. There's an active dropdown (activeDropdownIndex !== -1)
+    // 2. Current category is BELOW the active dropdown (currentIndex > activeDropdownIndex)
+    const shouldAddExtraSpacing = activeDropdownIndex !== -1 && currentIndex > activeDropdownIndex;
+    
+    return {
+      marginTop: shouldAddExtraSpacing ? dropdownSpaceNeeded : baseCategorySpacing
+    };
+  };
 
   // Dummy asset arrays
   const callRecordingsAssets = [
@@ -43,84 +112,95 @@ export default function HQ(){
     { title: "MARBELLA MASTERMIND 2024", subtitle: "https://www.youtube.com/watch?v=XLSQ6Pa6l7U&t=845s", url: "https://www.youtube.com/watch?v=XLSQ6Pa6l7U&t=845s" }
   ];
 
+  // Category configuration for clean mapping
+  const categories = [
+    {
+      id: 'callRecordings',
+      title: 'CALL RECORDINGS',
+      isOpen: callRecordingsOpen,
+      assets: callRecordingsAssets,
+      dropdown: callRecordingsDropdown,
+      notionUrl: 'https://www.notion.so/call-recordings-apc'
+    },
+    {
+      id: 'resources',
+      title: 'RESOURCES', 
+      isOpen: resourcesOpen,
+      assets: resourcessAssets,
+      dropdown: resourcesDropdown,
+      notionUrl: 'https://www.notion.so/resources-apc'
+    },
+    {
+      id: 'partnerships',
+      title: 'PARTNERSHIPS',
+      isOpen: partnershipsOpen, 
+      assets: partnershipsAssets,
+      dropdown: partnershipsDropdown,
+      notionUrl: 'https://www.notion.so/partnerships-apc'
+    },
+    {
+      id: 'events',
+      title: 'EVENTS',
+      isOpen: eventsOpen,
+      assets: eventsAssets, 
+      dropdown: eventsDropdown,
+      notionUrl: 'https://www.notion.so/events-apc'
+    }
+  ];
+
   return (
     <main className="hq-container">
       <section className={`hq-content-wrapper ${isAnyDropdownOpen ? 'has-open-dropdown' : ''}`}>
-        <div className={`hq-category ${callRecordingsOpen ? 'expanded' : ''}`}>
-          <div className="hq-category-header">
-            <a href="https://www.notion.so/call-recordings-apc" target="_blank" rel="noopener noreferrer" className="hq-title-link">
-              <h1 className="hq-title">CALL RECORDINGS</h1>
-            </a>
-            <div className="hq-dropdown-trigger" onClick={() => toggleCategory('callRecordings')}>
-              <span className={`hq-dropdown-arrow ${callRecordingsOpen ? 'open' : ''}`}>▼</span>
-            </div>
-          </div>
-          <div className={`hq-dropdown ${callRecordingsOpen ? 'open' : ''}`}>
-            {callRecordingsAssets.map((asset, index) => (
-              <div key={index} className="hq-asset-item">
-                <a href={asset.url} className="hq-asset-link">{asset.title}</a>
-                <div className="hq-asset-subtitle">{asset.subtitle}</div>
+        {categories.map((category, index) => {
+          const isLastCategory = index === categories.length - 1;
+          
+          // Get dynamic spacing for this category based on its position relative to active dropdown
+          const dynamicSpacing = calculateCategorySpacing(index);
+          
+          // Apply spacing normally - no special positioning for last category
+          const combinedStyles = {
+            ...category.dropdown.categoryStyle,
+            ...dynamicSpacing,
+          };
+
+          return (
+            <div 
+              key={category.id}
+              ref={(el) => {
+                // Set the dropdown ref for animation
+                if (category.dropdown.categoryRef) {
+                  (category.dropdown.categoryRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+                }
+                // Set the last category ref for visibility tracking
+                if (isLastCategory) {
+                  lastCategoryRef.current = el;
+                }
+              }}
+              className={`hq-category ${category.dropdown.categoryClassName} ${category.isOpen ? 'expanded' : ''} ${isLastCategory ? 'hq-category-last' : ''}`}
+              style={combinedStyles}
+            >
+              <div className="hq-category-header">
+                <a href={category.notionUrl} target="_blank" rel="noopener noreferrer" className="hq-title-link">
+                  <h1 className="hq-title">{category.title}</h1>
+                </a>
+                <div className="hq-dropdown-trigger" onClick={() => toggleCategory(category.id)}>
+                  <span className={`hq-dropdown-arrow ${category.isOpen ? 'open' : ''}`}>▼</span>
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-        
-        <div className={`hq-category ${resourcesOpen ? 'expanded' : ''}`}>
-          <div className="hq-category-header">
-            <a href="https://www.notion.so/resources-apc" target="_blank" rel="noopener noreferrer" className="hq-title-link">
-              <h1 className="hq-title">RESOURCES</h1>
-            </a>
-            <div className="hq-dropdown-trigger" onClick={() => toggleCategory('resources')}>
-              <span className={`hq-dropdown-arrow ${resourcesOpen ? 'open' : ''}`}>▼</span>
-            </div>
-          </div>
-          <div className={`hq-dropdown ${resourcesOpen ? 'open' : ''}`}>
-            {resourcessAssets.map((asset, index) => (
-              <div key={index} className="hq-asset-item">
-                <a href={asset.url} className="hq-asset-link">{asset.title}</a>
-                <div className="hq-asset-subtitle">{asset.subtitle}</div>
+              <div 
+                ref={category.dropdown.dropdownRef} 
+                className={`hq-dropdown ${category.dropdown.dropdownClassName}`}
+                style={category.dropdown.dropdownStyle}
+              >
+                <DropdownAssets 
+                  assets={category.assets}
+                  isOpen={category.isOpen}
+                  hasTransitionEnded={category.dropdown.hasTransitionEnded}
+                />
               </div>
-            ))}
-          </div>
-        </div>
-        
-        <div className={`hq-category ${partnershipsOpen ? 'expanded' : ''}`}>
-          <div className="hq-category-header">
-            <a href="https://www.notion.so/partnerships-apc" target="_blank" rel="noopener noreferrer" className="hq-title-link">
-              <h1 className="hq-title">PARTNERSHIPS</h1>
-            </a>
-            <div className="hq-dropdown-trigger" onClick={() => toggleCategory('partnerships')}>
-              <span className={`hq-dropdown-arrow ${partnershipsOpen ? 'open' : ''}`}>▼</span>
             </div>
-          </div>
-          <div className={`hq-dropdown ${partnershipsOpen ? 'open' : ''}`}>
-            {partnershipsAssets.map((asset, index) => (
-              <div key={index} className="hq-asset-item">
-                <a href={asset.url} className="hq-asset-link">{asset.title}</a>
-                <div className="hq-asset-subtitle">{asset.subtitle}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        <div className={`hq-category ${eventsOpen ? 'expanded' : ''}`}>
-          <div className="hq-category-header">
-            <a href="https://www.notion.so/events-apc" target="_blank" rel="noopener noreferrer" className="hq-title-link">
-              <h1 className="hq-title">EVENTS</h1>
-            </a>
-            <div className="hq-dropdown-trigger" onClick={() => toggleCategory('events')}>
-              <span className={`hq-dropdown-arrow ${eventsOpen ? 'open' : ''}`}>▼</span>
-            </div>
-          </div>
-          <div className={`hq-dropdown ${eventsOpen ? 'open' : ''}`}>
-            {eventsAssets.map((asset, index) => (
-              <div key={index} className="hq-asset-item">
-                <a href={asset.url} className="hq-asset-link">{asset.title}</a>
-                <div className="hq-asset-subtitle">{asset.subtitle}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+          );
+        })}
       </section>
     </main>
   );

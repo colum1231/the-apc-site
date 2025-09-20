@@ -306,46 +306,51 @@ html, body{background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed
 .hq-content-wrapper {
   width: calc(100% - 150px);
   max-width: 1100px;
-  height: 100vh;
+  min-height: 100vh; /* Use min-height instead of fixed height */
   overflow-y: auto;
+  overflow-x: visible; /* Prevent horizontal clipping */
   padding: 4rem 2rem 4rem 150px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 16rem;
   position: relative;
-  transition: all 0.2s ease;
+  transition: gap 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
 }
 
 
+
+
+/* FIXED: Use gap instead of margins for category spacing - 8x LARGER */
+.hq-content-wrapper {
+  gap: 8rem !important; /* This controls the space between WHOLE categories - 8x larger */
+}
+
+.hq-content-wrapper.has-open-dropdown {
+  gap: 4rem !important; /* Tighter spacing when dropdown is open */
+  /* Minimal expansion for dropdown content */
+  padding-bottom: 6rem; /* Modest extra bottom padding */
+}
 
 .hq-category {
-  width: 100%;
-  max-width: 975px;
-  text-align: left;
-  flex: 0 0 auto;
-  transform: translateZ(0);
-  transition: margin 0.2s ease;
+  margin-bottom: 0 !important; /* Remove individual margins, let gap handle it */
+  /* Simple margin transitions to match dropdown timing */
+  transition: margin-top 0.25s ease;
 }
 
-/* Default state: all categories evenly spaced with consistent margins */
-.hq-content-wrapper:not(.has-open-dropdown) .hq-category {
-  margin-bottom: 0;
-}
-
-/* When dropdown opens: slightly reduce spacing to accommodate dropdown content */
-.hq-content-wrapper.has-open-dropdown .hq-category:not(.expanded) {
-  margin-bottom: 0.5rem;
-}
-
-.hq-content-wrapper.has-open-dropdown .hq-category.expanded {
-  margin-bottom: 1rem;
+/* Last category - ensure it's always visible and has proper spacing */
+.hq-category-last {
+  /* Add extra bottom margin to ensure it's never clipped */
+  margin-bottom: 4rem !important;
+  /* Ensure it stays visible during animations */
+  z-index: 1;
 }
 
 .hq-category-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.1rem;
+  margin-bottom: 0.025rem !important;
   position: relative;
 }
 
@@ -393,28 +398,92 @@ html, body{background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed
   text-align: left;
 }
 
+/* Simplified dropdown animations - removed keyframes for consistent transitions */
+
+/* Category Container Base Styles - Fixed positioning system */
+.hq-category {
+  width: 100%;
+  max-width: 975px;
+  text-align: left;
+  flex: 0 0 auto;
+  transform: translateZ(0);
+  position: relative;
+  will-change: height, margin, padding;
+}
+
+/* Unified space reservation with single easing curve */
+.hq-category::after {
+  content: '';
+  display: block;
+  height: 0;
+  /* COORDINATED TIMING: Match dropdown and margin transitions */
+  transition: height 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.hq-category.dropdown-enter::after {
+  height: var(--reserved-dropdown-space, 150px);
+}
+
+.hq-category.dropdown-exit::after {
+  height: 0;
+}
+
+/* Dropdown Container - Simple height-based animation */
 .hq-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
   width: 100%;
   text-align: left;
   padding-left: 2.25rem;
-  max-height: 0;
-  opacity: 0;
+  height: 0;
+  opacity: 1;
   overflow: hidden;
-  transition: max-height 0.2s ease, opacity 0.2s ease;
-  margin-top: 0;
+  background: transparent;
+  z-index: 10;
+  transition: height 0.25s ease;
 }
 
-.hq-dropdown.open {
-  max-height: 300px;
-  opacity: 1;
-  margin-top: 0.8rem;
+/* Assets wrapper - simple container */
+.hq-assets-wrapper {
+  padding: 0.25rem 0;
+}
+
+/* Stable expanded state - auto height */
+.hq-dropdown.dropdown-open {
+  height: auto;
+  max-height: 120px; /* Reasonable limit */
+}
+
+/* Stable collapsed state */
+.hq-dropdown.dropdown-closed {
+  height: 0;
 }
 
 .hq-asset-item {
-  margin-bottom: 0.6rem;  /* Tighter spacing between assets */
-  padding-bottom: 0.6rem;  /* Tighter padding between assets */
+  margin-bottom: 0.15rem !important;
+  padding-bottom: 0.15rem !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  opacity: 1;
+}
+
+/* Fade-in animation for asset items - prevents flicker */
+.hq-asset-item.fade-in-asset {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: asset-fade-in 0.4s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+  animation-delay: var(--asset-delay, 0s);
+}
+
+@keyframes asset-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .hq-asset-item:last-child {
@@ -444,5 +513,40 @@ html, body{background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed
   font-size: 0.875rem;
   line-height: 1.5;
   font-weight: 400;
+}
+
+/* ===== BRUTE FORCE SPACING OVERRIDES ===== */
+/* Force consistent vertical spacing across all states - USING GAP - 8x LARGER */
+.hq-content-wrapper {
+  gap: 8rem !important; /* Controls space between WHOLE categories - 8x larger */
+}
+
+.hq-content-wrapper.has-open-dropdown {
+  gap: 4rem !important; /* Tighter when dropdown open - 8x larger */
+}
+
+.hq-category,
+.category-block {
+  margin-bottom: 0 !important; /* Let gap handle spacing */
+}
+
+.hq-dropdown,
+.dropdown-content {
+  margin-top: 0.25rem !important;
+}
+
+.hq-asset-item,
+.asset-item {
+  margin-bottom: 0.15rem !important;
+  padding-bottom: 0.15rem !important;
+}
+
+/* Override any potential conflicting margins */
+.hq-category * {
+  margin-top: 0 !important;
+}
+
+.hq-dropdown * {
+  margin-top: 0 !important;
 }
 
