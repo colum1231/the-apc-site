@@ -84,6 +84,17 @@ html, body{background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed
 .input::placeholder{color:#545454;opacity:1;transition:opacity .15s ease;}
 .input:focus::placeholder{opacity:0;}
 
+/* Search results page input placeholder styling */
+.search-results-input::placeholder {
+  color: #272727;
+  opacity: 1;
+  font-style: italic;
+  transition: opacity .15s ease;
+  text-transform: capitalize;
+}
+.search-results-input:focus::placeholder {
+  opacity: 0;
+}
 
 .hq {
   position: fixed;
@@ -301,50 +312,102 @@ html, body{background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed
   display: flex;
   align-items: stretch;
   justify-content: center;
+  padding-top: 50px;
 }
 
 .hq-content-wrapper {
   width: calc(100% - 150px);
   max-width: 1100px;
-  min-height: 100vh; /* Use min-height instead of fixed height */
+  height: 100vh;
   overflow-y: auto;
-  overflow-x: visible; /* Prevent horizontal clipping */
   padding: 4rem 2rem 4rem 150px;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   gap: 16rem;
   position: relative;
-  transition: gap 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+  transition: all 1.5s ease-out;
 }
 
 
 
-
-/* FIXED: Use gap instead of margins for category spacing - 8x LARGER */
+/* 🎯 Point A to Point B Animation System */
 .hq-content-wrapper {
-  gap: 8rem !important; /* This controls the space between WHOLE categories - 8x larger */
-}
-
-.hq-content-wrapper.has-open-dropdown {
-  gap: 4rem !important; /* Tighter spacing when dropdown is open */
-  /* Minimal expansion for dropdown content */
-  padding-bottom: 6rem; /* Modest extra bottom padding */
+  gap: 0; /* Remove gap, use margin-bottom for smooth transitions */
 }
 
 .hq-category {
-  margin-bottom: 0 !important; /* Remove individual margins, let gap handle it */
-  /* Simple margin transitions to match dropdown timing */
-  transition: margin-top 0.25s ease;
+  width: 100%;
+  max-width: 975px;
+  text-align: left;
+  flex: 0 0 auto;
+  
+  /* Point A: Default state with 7rem gaps */
+  margin-bottom: 7rem;
+  padding-bottom: 0;
+  opacity: 1;
+  
+  /* Base transitions - fade in immediately when movement finishes */
+  transition: margin-bottom 1s cubic-bezier(0.6, 0.05, 0.3, 1), 
+              padding-bottom 1s cubic-bezier(0.6, 0.05, 0.3, 1),
+              opacity 0.5s cubic-bezier(0.6, 0.05, 0.3, 1);
+  transform: translateZ(0); /* Hardware acceleration */
+  will-change: margin-bottom, padding-bottom, opacity;
 }
 
-/* Last category - ensure it's always visible and has proper spacing */
-.hq-category-last {
-  /* Add extra bottom margin to ensure it's never clipped */
-  margin-bottom: 4rem !important;
-  /* Ensure it stays visible during animations */
-  z-index: 1;
+/* Point B: ALL movement with custom 1s easing, delayed 0.6s */
+.has-open-dropdown .hq-category:not(.expanded) {
+  margin-bottom: 2.3rem;
+  transition: margin-bottom 1s cubic-bezier(0.6, 0.05, 0.3, 1) 0.6s, 
+              padding-bottom 1s cubic-bezier(0.6, 0.05, 0.3, 1) 0.6s,
+              opacity 0.5s cubic-bezier(0.6, 0.05, 0.3, 1) 0s;
 }
+
+/* Expanded category - custom 1s easing, delayed 0.6s */
+.has-open-dropdown .hq-category.expanded {
+  margin-bottom: 2.3rem;
+  padding-bottom: 0;
+  transition: margin-bottom 1s cubic-bezier(0.6, 0.05, 0.3, 1) 0.6s, 
+              padding-bottom 1s cubic-bezier(0.6, 0.05, 0.3, 1) 0.6s,
+              opacity 0.5s cubic-bezier(0.6, 0.05, 0.3, 1) 0s;
+}
+
+/* � GLOBAL PAUSE: ALL movement paused for 0.6s when any dropdown clicked */
+
+/* Categories below expanded one: custom 1s movement easing */
+.has-open-dropdown .hq-category.expanded ~ .hq-category {
+  opacity: 0;
+  transition: margin-bottom 1s cubic-bezier(0.6, 0.05, 0.3, 1) 0.6s, 
+              padding-bottom 1s cubic-bezier(0.6, 0.05, 0.3, 1) 0.6s,
+              opacity 0.5s cubic-bezier(0.6, 0.05, 0.3, 1) 0s;
+}
+
+/* ALL categories: custom 1s movement easing, delayed 0.6s */
+.has-open-dropdown .hq-category {
+  transition: margin-bottom 1s cubic-bezier(0.6, 0.05, 0.3, 1) 0.6s, 
+              padding-bottom 1s cubic-bezier(0.6, 0.05, 0.3, 1) 0.6s,
+              opacity 0.5s cubic-bezier(0.6, 0.05, 0.3, 1) 0s;
+}
+
+/* ALL dropdowns: custom 1s movement easing, delayed 0.6s */
+.has-open-dropdown .hq-dropdown {
+  transition: max-height 1s cubic-bezier(0.6, 0.05, 0.3, 1) 0.6s, 
+              opacity 1s cubic-bezier(0.6, 0.05, 0.3, 1) 0.6s;
+}
+
+/* ALL arrows: custom 1s movement easing, delayed 0.6s */
+.has-open-dropdown .hq-dropdown-arrow {
+  transition: transform 1s cubic-bezier(0.6, 0.05, 0.3, 1) 0.6s;
+}
+
+/* 🎭 CLOSING: Categories stay hidden during movement, then fade in after */
+.hq-category {
+  transition: margin-bottom 2s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              padding-bottom 2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              opacity 0.6s ease 2s; /* Closing: Fade in AFTER 2s movement */
+}
+
+
 
 .hq-category-header {
   display: flex;
@@ -369,7 +432,7 @@ html, body{background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed
   color: white;
   margin-left: 1rem;
   flex-shrink: 0;
-  transition: transform 0.2s ease;
+  transition: transform 1.4s cubic-bezier(0.6, 0.05, 0.3, 1);
 }
 
 .hq-dropdown-arrow.open {
@@ -398,92 +461,52 @@ html, body{background:#000 url("/res+cat_back.jpg") center/cover no-repeat fixed
   text-align: left;
 }
 
-/* Simplified dropdown animations - removed keyframes for consistent transitions */
-
-/* Category Container Base Styles - Fixed positioning system */
-.hq-category {
-  width: 100%;
-  max-width: 975px;
-  text-align: left;
-  flex: 0 0 auto;
-  transform: translateZ(0);
-  position: relative;
-  will-change: height, margin, padding;
-}
-
-/* Unified space reservation with single easing curve */
-.hq-category::after {
-  content: '';
-  display: block;
-  height: 0;
-  /* COORDINATED TIMING: Match dropdown and margin transitions */
-  transition: height 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-}
-
-.hq-category.dropdown-enter::after {
-  height: var(--reserved-dropdown-space, 150px);
-}
-
-.hq-category.dropdown-exit::after {
-  height: 0;
-}
-
-/* Dropdown Container - Simple height-based animation */
 .hq-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
   width: 100%;
   text-align: left;
   padding-left: 2.25rem;
-  height: 0;
-  opacity: 1;
+  max-height: 0;
+  opacity: 0;
   overflow: hidden;
-  background: transparent;
-  z-index: 10;
-  transition: height 0.25s ease;
+  transition: max-height 0s, 
+              opacity 1.4s cubic-bezier(0.6, 0.05, 0.3, 1);
+  margin-top: 0;
 }
 
-/* Assets wrapper - simple container */
-.hq-assets-wrapper {
-  padding: 0.25rem 0;
-}
-
-/* Stable expanded state - auto height */
-.hq-dropdown.dropdown-open {
-  height: auto;
-  max-height: 120px; /* Reasonable limit */
-}
-
-/* Stable collapsed state */
-.hq-dropdown.dropdown-closed {
-  height: 0;
+.hq-dropdown.open {
+  max-height: 500px;
+  opacity: 1;
+  margin-top: 0.5rem;
+  padding-top: 30px; /* 30px gap between title and first asset */
 }
 
 .hq-asset-item {
-  margin-bottom: 0.15rem !important;
-  padding-bottom: 0.15rem !important;
+  margin-bottom: 0.15rem !important;  /* BRUTE FORCE: Half of 0.3rem spacing between assets */
+  padding-bottom: 0.15rem !important;  /* BRUTE FORCE: Half of 0.3rem padding between assets */
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  opacity: 1;
+  transition: opacity 0.3s cubic-bezier(0.6, 0.05, 0.3, 1);
 }
 
-/* Fade-in animation for asset items - prevents flicker */
-.hq-asset-item.fade-in-asset {
-  opacity: 0;
-  transform: translateY(12px);
-  animation: asset-fade-in 0.4s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
-  animation-delay: var(--asset-delay, 0s);
+/* � BRUTE FORCE COLLAPSE TIMING */
+/* Third asset (bottom) - fades out INSTANTLY (0s delay, 0.1s duration) */
+.hq-asset-item:nth-child(3) {
+  transition: opacity 0.1s ease 0s !important;
 }
 
-@keyframes asset-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Second asset (middle) - fades out after 0.3s delay */
+.hq-asset-item:nth-child(2) {
+  transition: opacity 0.1s ease 0.3s !important;
+}
+
+/* First asset (top) - fades out after 0.6s delay */
+.hq-asset-item:nth-child(1) {
+  transition: opacity 0.1s ease 0.6s !important;
+}
+
+/* When dropdown closes, all assets fade to 0 */
+.hq-dropdown:not(.open) .hq-asset-item {
+  opacity: 0 !important;
 }
 
 .hq-asset-item:last-child {

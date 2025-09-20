@@ -1,6 +1,6 @@
 export async function fetchCustomGPTResults(query: string) {
   // Hardcoded CustomGPT credentials
-  const apiKey = "8352|mvmrkQwCNY2JZ72qgUwcbBksdbvq8BJHqDMIWDhl1ca744f6";
+  const apiKey = "8374|est94YLK8CwtP6RaZzEaxLTQWevyZckQsa72nz9B045a8b05";
   const projectId = 80230;
   const url = "/api/ask";
   const payload = { q: query, apiKey, projectId };
