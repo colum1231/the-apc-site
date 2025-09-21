@@ -25,6 +25,8 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
   const [loading, setLoading] = useState(false);
   const [resultsData, setResultsData] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Store quote cutoff for each member result (set once per result set)
+  const [memberQuoteCutoffs, setMemberQuoteCutoffs] = useState<number[]>([]);
 
   // Right column category states (HQ-style dropdowns)
   const [callRecordingsOpen, setCallRecordingsOpen] = useState(false);
@@ -45,18 +47,14 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
   // Fetch search results
   useEffect(() => {
     if (!q) return;
-    
     setInputValue(q ? capitalizeWords(q) : "");
     setLoading(true);
     setErrorMsg(null);
-    
     console.log("🔍 Starting search for query:", q);
-    
     fetchCustomGPTResults(q)
       .then((res) => {
         console.log("✅ Full API response received:", res);
         console.log("📊 Response data structure:", res?.data);
-        
         // Parse the openai_response JSON string to get the actual structured data
         let parsedData = {};
         if (res?.data?.openai_response) {
@@ -76,9 +74,13 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
         } else {
           console.log("🚨 No openai_response found in:", res?.data);
         }
-        
         // Set the parsed structured data
         setResultsData(parsedData);
+        // Set quote cutoffs for each member result (8-12, fixed per result set)
+        const pd: any = parsedData;
+        const memberList = (pd && pd.transcripts && pd.transcripts.items ? pd.transcripts.items : [])
+          .concat(pd && pd.community_chats && pd.community_chats.items ? pd.community_chats.items : []);
+        setMemberQuoteCutoffs(memberList.map(() => Math.floor(Math.random() * 5) + 8));
         setLoading(false);
       })
       .catch((err) => {
@@ -123,31 +125,31 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
         background: "#000 url('/res+cat_back.jpg') center/cover no-repeat fixed"
       }}
     >
-      {/* ===== LEFT COLUMN: SEARCH BOX + MEMBERS ===== */}
+      {/* ===== LEFT COLUMN: SEARCH BOX + RESULTS ===== */}
       <div className="left-column" style={{ 
         flex: 1, 
         display: "flex", 
         flexDirection: "column", 
         alignItems: "center", 
         minWidth: 0, 
-        borderRight: "1px solid #222", 
+        borderRight: "1px solid #000", 
         position: "relative" 
       }}>
         
         {/* SEARCH BOX - Fixed at top center of left half */}
         <div style={{ 
           position: "absolute",
-          top: "80px",
+          top: "100px",
           left: "50%",
-          width: "356px", // 25% smaller than 475px
-          height: "42.5px",
+          width: "400.5px", // 10% less than 445px
+          height: "43.85px", // 17.5% less than 53.125px
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          transform: "translateX(-50%) translateX(-30px)", // 30px left offset
+          transform: "translateX(-50%) translateX(2.5px)", // 80px right from center
           zIndex: 3
         }}>
-          <form
+            <form
             onSubmit={e => {
               e.preventDefault();
               if (inputValue.trim()) router.push(`/search?q=${encodeURIComponent(inputValue)}`);
@@ -168,9 +170,9 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
                 background: "transparent",
                 color: "#545454",
                 textAlign: "center",
-                fontSize: "14.5px",
+                fontSize: "18.625px",
                 outline: "none",
-                padding: "0 28px"
+                padding: "0 35px"
               }}
               autoFocus
             />
@@ -191,37 +193,7 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
           </div>
         )}
 
-        {/* TEMPORARY DEBUG INFO */}
-        <div style={{ 
-          position: "absolute", 
-          top: "160px", 
-          left: "20px", 
-          color: "#888", 
-          fontSize: "10px",
-          background: "rgba(0,0,0,0.9)",
-          padding: "10px",
-          borderRadius: "4px",
-          maxWidth: "400px",
-          maxHeight: "200px",
-          overflow: "auto",
-          zIndex: 1000
-        }}>
-          <div><strong>Loading:</strong> {loading ? 'YES' : 'NO'}</div>
-          <div><strong>Error:</strong> {errorMsg || 'None'}</div>
-          <div><strong>Raw Data Keys:</strong> {resultsData ? Object.keys(resultsData).join(', ') : 'null'}</div>
-          <div><strong>Transcripts:</strong> {transcripts.length}</div>
-          <div><strong>Community:</strong> {communityChats.length}</div>
-          <div><strong>Resources:</strong> {resources.length}</div>
-          <div><strong>Partnerships:</strong> {partnerships.length}</div>
-          <div><strong>Events:</strong> {events.length}</div>
-          {resultsData && (
-            <div style={{ marginTop: "8px", fontSize: "9px", color: "#666" }}>
-              <strong>Sample Keys:</strong> {JSON.stringify(Object.keys(resultsData)).substring(0, 100)}...
-            </div>
-          )}
-        </div>
-        
-        {/* MEMBERS RESULTS SECTION */}
+        {/* RESULTS SECTION */}
         <div style={{ 
           position: "absolute",
           top: "222.5px", // 80px + 42.5px + 100px padding
@@ -229,7 +201,7 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
           right: 0,
           bottom: 0,
           overflowY: "auto",
-          padding: "0 48px 48px 48px"
+          padding: "0 62.5px 48px 125px"
         }}>
           {loading ? (
             <div style={{ color: "#fff", textAlign: "center", marginTop: "50px" }}>
@@ -237,90 +209,40 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
             </div>
           ) : (
             <>
-              {/* MEMBERS TITLE */}
-              <h1 className="hq-title" style={{ 
-                color: "white", 
-                fontSize: "2rem", 
-                fontWeight: "700", 
-                marginBottom: "25px", 
-                textAlign: "center",
-                textTransform: "uppercase",
-                letterSpacing: "0.1em"
-              }}>
-                MEMBERS
-              </h1>
-              
-              {/* MEMBERS CARDS */}
+              {/* MEMBER CARDS */}
               {memberResults && memberResults.length > 0 ? (
                 memberResults.map((member: any, index: number) => (
-                  <div key={index} className="hq-asset-item" style={{ 
-                    marginBottom: "25px", 
+                  <div key={index} className="hq-asset-item" style={{
+                    marginBottom: "30px",
                     width: "100%",
-                    borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+                    borderBottom: "1px solid rgba(255,255,255,0)",
                     paddingBottom: "20px"
                   }}>
-                    {/* MEMBER NAME/TITLE */}
-                    <a 
-                      href={member.url || "#"} 
-                      className="hq-asset-link" 
-                      target={member.url ? "_blank" : undefined} 
-                      rel={member.url ? "noopener noreferrer" : undefined}
-                      style={{ 
-                        display: "block",
-                        color: "#949494",
-                        fontSize: "1rem",
-                        fontWeight: "500",
-                        textDecoration: "none",
-                        marginBottom: "4px",
-                        letterSpacing: "0.02em",
-                        wordWrap: "break-word", 
-                        overflowWrap: "break-word"
-                      }}
-                    >
-                      {member.name || member.title || "Unknown Member"}
-                    </a>
-                    
-                    {/* MEMBER DETAILS */}
-                    <div className="hq-asset-subtitle" style={{ 
-                      color: "#707070",
-                      fontSize: "0.875rem",
-                      lineHeight: "1.5",
-                      fontWeight: "400",
-                      wordWrap: "break-word", 
-                      overflowWrap: "break-word"
-                    }}>
-                      {/* QUOTE/CONTENT */}
-                      {member.quote && (
-                        <div style={{ 
-                          fontWeight: "600", 
-                          marginBottom: "8px", 
-                          fontStyle: "italic",
-                          color: "#949494"
-                        }}>
-                          "{member.quote.length > 150 ? member.quote.substring(0, 150) + '...' : member.quote}"
-                        </div>
-                      )}
-                      
-                      {/* CONTEXT */}
-                      {member.context && (
-                        <div style={{ 
-                          marginBottom: "8px", 
-                          color: "#808080"
-                        }}>
-                          {member.context}
-                        </div>
-                      )}
-                      
-                      {/* SOURCE INFO */}
-                      <div style={{ 
-                        fontSize: "12px", 
-                        color: "#666", 
-                        marginTop: "8px",
-                        opacity: 0.8
+                    {/* Line 1: display_title */}
+                    <div style={{
+                      color: "#8b8989",
+                      fontWeight: 600,
+                      fontSize: "19.5px",
+                      marginBottom: "5px"
+                    }}>{member.display_title || member.name || member.title || "Unknown Member"}</div>
+                    {/* Line 2: Relevant quote */}
+                    {member.quote && (
+                      <div style={{
+                        color: "#8b8989",
+                        fontSize: "17.5px",
+                        fontStyle: "italic",
+                        fontWeight: 400,
+                        marginBottom: "20px"
                       }}>
-                        Source: {member.source || "Unknown"}
+                        {(() => {
+                          const words = member.quote.split(" ");
+                          // Use fixed cutoff for this member result
+                          const maxWords = memberQuoteCutoffs[index] || 10;
+                          const truncated = words.length > maxWords ? words.slice(0, maxWords).join(" ") + "..." : member.quote;
+                          return `"${truncated}"`;
+                        })()}
                       </div>
-                    </div>
+                    )}
                   </div>
                 ))
               ) : (
@@ -329,9 +251,9 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
                   textAlign: 'center', 
                   fontStyle: 'italic',
                   marginTop: "50px",
-                  fontSize: "0.875rem"
+                  fontSize: "0.9375rem"
                 }}>
-                  No member results found for this query.
+                  No results found for this query.
                 </div>
               )}
             </>
@@ -345,59 +267,76 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
         display: "flex", 
         flexDirection: "column", 
         minHeight: "100vh", 
-        overflow: "visible" 
+        overflow: "visible",
+        paddingTop: "80px"
       }}>
         <div style={{ 
           flex: 1, 
           overflowY: "visible", 
-          padding: 48,
+          padding: 0, // Set to 0 to eliminate gap from separator
           minHeight: "auto"
         }}>
-          
-          {/* SUPER VISIBLE DEBUG */}
-          <div style={{ background: "red", color: "white", padding: "20px", margin: "10px 0", fontSize: "20px" }}>
-            DEBUG: Right column content starts here
-          </div>
           
           <div className={`hq-content-wrapper ${isAnyDropdownOpen ? 'has-open-dropdown' : ''}`}>
             
             {/* CALL RECORDINGS CATEGORY */}
-            <div className={`hq-category ${callRecordingsOpen ? 'expanded' : ''}`} style={{ marginBottom: "30px" }}>
-              <div className="hq-category-header">
-                <a href="https://www.notion.so/call-recordings-apc" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
-                  <h1 style={{ color: "#ffffff", fontSize: "20px", fontWeight: "bold", margin: "0", padding: "10px", background: "rgba(255,0,0,0.3)" }}>CALL RECORDINGS ({callResults?.length || 0})</h1>
+            <div className={`hq-category ${callRecordingsOpen ? 'expanded' : ''}`} style={{ marginBottom: "30px", marginLeft: "-20px", position: "relative", left: "-20px", transform: "translateX(-20px)" }}>
+              <div className="hq-category-header" style={{ display: "flex", alignItems: "center", width: "90%" }}>
+                <a href="https://www.notion.so/call-recordings-apc" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", flex: "1" }}>
+                  <h1 style={{ color: "#8b8989", fontSize: "20px", fontWeight: "bold", margin: "0", padding: "0" }}>CALL RECORDINGS</h1>
                 </a>
-                <div onClick={() => toggleCategory('callRecordings')} style={{ cursor: "pointer", padding: "10px" }}>
-                  <span style={{ color: "#ffffff", fontSize: "20px", background: "rgba(0,0,0,0.5)", padding: "5px" }}>▼</span>
+                <div onClick={() => toggleCategory('callRecordings')} style={{ cursor: "pointer", padding: "0", marginLeft: "5px" }}>
+                  <span style={{ 
+                    color: "#707070", 
+                    fontSize: "12px", 
+                    transform: callRecordingsOpen ? "rotate(0deg)" : "rotate(-90deg)",
+                    transition: "transform 0.3s ease",
+                    display: "inline-block"
+                  }}>▼</span>
                 </div>
               </div>
               <div className={`hq-dropdown ${callRecordingsOpen ? 'open' : ''}`}>
                 {callResults && callResults.length > 0 ? (
                   callResults.map((asset: any, index: number) => (
-                    <div key={index} className="hq-asset-item">
-                      <a 
-                        href={asset.url || "#"} 
-                        className="hq-asset-link"
-                        target={asset.url ? "_blank" : undefined} 
-                        rel={asset.url ? "noopener noreferrer" : undefined}
-                      >
-                        {asset.title || asset.name || "Untitled Call"}
-                      </a>
-                      <div className="hq-asset-subtitle" style={{ wordWrap: "break-word", overflowWrap: "break-word" }}>
-                        {asset.quote && (
-                          <div style={{ fontStyle: "italic", marginBottom: "8px", color: "#949494" }}>
-                            "{asset.quote.length > 150 ? asset.quote.substring(0, 150) + '...' : asset.quote}"
-                          </div>
-                        )}
-                        {asset.context && (
-                          <div style={{ color: "#808080", marginBottom: "8px" }}>
-                            {asset.context}
-                          </div>
-                        )}
-                        <div style={{ fontSize: "12px", color: "#666", opacity: 0.8 }}>
-                          Source: {asset.source || "Unknown"}
+                    <div key={index} className="hq-asset-item" style={{
+                      marginBottom: "25px",
+                      width: "100%",
+                      borderBottom: "1px solid rgba(255,255,255,0)",
+                      paddingBottom: "20px"
+                    }}>
+                      {/* Line 1: display_title (Column B) */}
+                      <div style={{
+                        color: "#8b8989",
+                        fontWeight: 600,
+                        fontSize: "16.5px",
+                        marginBottom: "2px"
+                      }}>{asset.display_title || asset.title || asset.name || "Untitled Call"}</div>
+                      {/* Line 2: Relevant quote (max 10 words) */}
+                      {asset.quote && (
+                        <div style={{
+                          color: "#8b8989",
+                          fontSize: "15.5px",
+                          fontStyle: "italic",
+                          fontWeight: 400
+                        }}>
+                          {(() => {
+                            const words = asset.quote.split(" ");
+                            return words.length > 10 ? words.slice(0, 10).join(" ") + "..." : asset.quote;
+                          })()}
                         </div>
-                      </div>
+                      )}
+                      {/* Line 3: URL for call (Column C / resource_title) */}
+                      {asset.resource_title || asset.url ? (
+                        <div style={{
+                          color: "#6faaff",
+                          fontSize: "1.0375rem",
+                          marginTop: "2px"
+                        }}>
+                          <a href={asset.url || "#"} target="_blank" rel="noopener noreferrer" style={{ color: "#6faaff", textDecoration: "underline" }}>
+                            {asset.resource_title || asset.url}
+                          </a>
+                        </div>
+                      ) : null}
                     </div>
                   ))
                 ) : (
@@ -410,40 +349,67 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
               </div>
             </div>
             
-            <div style={{ background: "yellow", color: "black", padding: "10px", margin: "20px 0" }}>
-              DEBUG: RESOURCES CATEGORY SHOULD BE BELOW THIS
-            </div>
-            
             {/* RESOURCES CATEGORY */}
-            <div className={`hq-category ${resourcesOpen ? 'expanded' : ''}`} style={{ border: "1px solid red", margin: "10px 0", opacity: 1, visibility: "visible" }}>
-              <div className="hq-category-header">
-                <a href="https://www.notion.so/resources-apc" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
-                  <h1 style={{ color: "#ffffff", fontSize: "20px", fontWeight: "bold", margin: "0", padding: "10px", background: "rgba(255,0,0,0.3)" }}>RESOURCES ({resourceResults?.length || 0})</h1>
+            <div className={`hq-category ${resourcesOpen ? 'expanded' : ''}`} style={{ marginLeft: "-20px", position: "relative", left: "-20px", transform: "translateX(-20px)" }}>
+              <div className="hq-category-header" style={{ display: "flex", alignItems: "center", width: "90%" }}>
+                <a href="https://www.notion.so/resources-apc" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", flex: "1" }}>
+                  <h1 style={{ color: "#8b8989", fontSize: "20px", fontWeight: "bold", margin: "0", padding: "0" }}>RESOURCES</h1>
                 </a>
-                <div onClick={() => toggleCategory('resources')} style={{ cursor: "pointer", padding: "10px" }}>
-                  <span style={{ color: "#ffffff", fontSize: "20px", background: "rgba(0,0,0,0.5)", padding: "5px" }}>▼</span>
+                <div onClick={() => toggleCategory('resources')} style={{ cursor: "pointer", padding: "0", marginLeft: "5px" }}>
+                  <span style={{ 
+                    color: "#707070", 
+                    fontSize: "12px", 
+                    transform: resourcesOpen ? "rotate(0deg)" : "rotate(-90deg)",
+                    transition: "transform 0.3s ease",
+                    display: "inline-block"
+                  }}>▼</span>
                 </div>
               </div>
               <div className={`hq-dropdown ${resourcesOpen ? 'open' : ''}`}>
                 {resourceResults && resourceResults.length > 0 ? (
                   resourceResults.map((asset: any, index: number) => (
-                    <div key={index} className="hq-asset-item">
-                      <a 
-                        href={asset.url || "#"} 
-                        className="hq-asset-link"
-                        target={asset.url ? "_blank" : undefined} 
-                        rel={asset.url ? "noopener noreferrer" : undefined}
-                      >
-                        {asset.title || asset.filename?.replace(/\.[^/.]+$/, "") || "Untitled"}
-                      </a>
-                      <div className="hq-asset-subtitle" style={{ wordWrap: "break-word", overflowWrap: "break-word" }}>
-                        {asset.summary || asset.description || asset.content ? 
-                          ((asset.summary || asset.description || asset.content).length > 200 ? 
-                            (asset.summary || asset.description || asset.content).substring(0, 200) + '...' : 
-                            (asset.summary || asset.description || asset.content)) : 
-                          "No description available"
-                        }
+                    <div key={index} className="hq-asset-item" style={{
+                      marginBottom: "25px",
+                      width: "100%",
+                      borderBottom: "1px solid rgba(255,255,255,0)",
+                      paddingBottom: "20px"
+                    }}>
+                      {/* Line 1: display_title (Column B) as hyperlink */}
+                      <div style={{
+                        color: "#8b8989",
+                        fontWeight: 600,
+                        fontSize: "16.5px",
+                        marginBottom: "2px"
+                      }}>
+                        <a href={asset.url || "#"} target="_blank" rel="noopener noreferrer" style={{ color: "#8b8989", textDecoration: "underline" }}>
+                          {asset.display_title || asset.title || asset.filename?.replace(/\.[^/.]+$/, "") || "Untitled"}
+                        </a>
                       </div>
+                      {/* Line 2: Quick sentence of relevance (quote/summary/description) */}
+                      {asset.summary || asset.description || asset.content ? (
+                        <div style={{
+                          color: "#8b8989",
+                          fontSize: "15.5px",
+                          fontStyle: "italic",
+                          fontWeight: 400
+                        }}>
+                          {(asset.summary || asset.description || asset.content).length > 200 ?
+                            (asset.summary || asset.description || asset.content).substring(0, 200) + '...'
+                            : (asset.summary || asset.description || asset.content)}
+                        </div>
+                      ) : null}
+                      {/* Line 3: URL for resource (Column C / resource_title) */}
+                      {asset.resource_title || asset.url ? (
+                        <div style={{
+                          color: "#6faaff",
+                          fontSize: "1.0375rem",
+                          marginTop: "2px"
+                        }}>
+                          <a href={asset.url || "#"} target="_blank" rel="noopener noreferrer" style={{ color: "#6faaff", textDecoration: "underline" }}>
+                            {asset.resource_title || asset.url}
+                          </a>
+                        </div>
+                      ) : null}
                     </div>
                   ))
                 ) : (
@@ -456,18 +422,20 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
               </div>
             </div>
             
-            <div style={{ background: "blue", color: "white", padding: "10px", margin: "20px 0" }}>
-              DEBUG: PARTNERSHIPS CATEGORY SHOULD BE BELOW THIS
-            </div>
-            
             {/* PARTNERSHIPS CATEGORY */}
-            <div className={`hq-category ${partnershipsOpen ? 'expanded' : ''}`} style={{ border: "1px solid blue", margin: "10px 0", opacity: 1, visibility: "visible" }}>
-              <div className="hq-category-header">
-                <a href="https://www.notion.so/partnerships-apc" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
-                  <h1 style={{ color: "#ffffff", fontSize: "20px", fontWeight: "bold", margin: "0", padding: "10px", background: "rgba(0,0,255,0.3)" }}>PARTNERSHIPS ({partnerResults?.length || 0})</h1>
+            <div className={`hq-category ${partnershipsOpen ? 'expanded' : ''}`} style={{ marginLeft: "-20px", position: "relative", left: "-20px", transform: "translateX(-20px)" }}>
+              <div className="hq-category-header" style={{ display: "flex", alignItems: "center", width: "90%" }}>
+                <a href="https://www.notion.so/partnerships-apc" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", flex: "1" }}>
+                  <h1 style={{ color: "#8b8989", fontSize: "21px", fontWeight: "bold", margin: "0", padding: "0" }}>PARTNERSHIPS</h1>
                 </a>
-                <div onClick={() => toggleCategory('partnerships')} style={{ cursor: "pointer", padding: "10px" }}>
-                  <span style={{ color: "#ffffff", fontSize: "20px", background: "rgba(0,0,0,0.5)", padding: "5px" }}>▼</span>
+                <div onClick={() => toggleCategory('partnerships')} style={{ cursor: "pointer", padding: "0", marginLeft: "5px" }}>
+                  <span style={{ 
+                    color: "#707070", 
+                    fontSize: "12px", 
+                    transform: partnershipsOpen ? "rotate(0deg)" : "rotate(-90deg)",
+                    transition: "transform 0.3s ease",
+                    display: "inline-block"
+                  }}>▼</span>
                 </div>
               </div>
               <div className={`hq-dropdown ${partnershipsOpen ? 'open' : ''}`}>
@@ -494,8 +462,8 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
                           <div style={{ 
                             marginTop: "8px", 
                             color: "#949494", 
-                            fontSize: "0.875rem",
-                            borderTop: "1px solid rgba(255,255,255,0.1)",
+                            fontSize: "0.9375rem",
+                            borderTop: "1px solid rgba(255,255,255,0)",
                             paddingTop: "4px"
                           }}>
                             Contact: {asset.contact_line}
@@ -514,18 +482,20 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
               </div>
             </div>
             
-            <div style={{ background: "green", color: "white", padding: "10px", margin: "20px 0" }}>
-              DEBUG: EVENTS CATEGORY SHOULD BE BELOW THIS
-            </div>
-            
             {/* EVENTS CATEGORY */}
-            <div className={`hq-category ${eventsOpen ? 'expanded' : ''}`} style={{ border: "1px solid green", margin: "10px 0", opacity: 1, visibility: "visible" }}>
-              <div className="hq-category-header">
-                <a href="https://www.notion.so/events-apc" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
-                  <h1 style={{ color: "#ffffff", fontSize: "20px", fontWeight: "bold", margin: "0", padding: "10px", background: "rgba(0,255,0,0.3)" }}>EVENTS ({eventResults?.length || 0})</h1>
+            <div className={`hq-category ${eventsOpen ? 'expanded' : ''}`} style={{ marginLeft: "-20px", position: "relative", left: "-20px", transform: "translateX(-20px)" }}>
+              <div className="hq-category-header" style={{ display: "flex", alignItems: "center", width: "90%" }}>
+                <a href="https://www.notion.so/events-apc" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", flex: "1" }}>
+                  <h1 style={{ color: "#8b8989", fontSize: "20px", fontWeight: "bold", margin: "0", padding: "0" }}>EVENTS</h1>
                 </a>
-                <div onClick={() => toggleCategory('events')} style={{ cursor: "pointer", padding: "10px" }}>
-                  <span style={{ color: "#ffffff", fontSize: "20px", background: "rgba(0,0,0,0.5)", padding: "5px" }}>▼</span>
+                <div onClick={() => toggleCategory('events')} style={{ cursor: "pointer", padding: "0", marginLeft: "5px" }}>
+                  <span style={{ 
+                    color: "#707070", 
+                    fontSize: "12px", 
+                    transform: eventsOpen ? "rotate(0deg)" : "rotate(-90deg)",
+                    transition: "transform 0.3s ease",
+                    display: "inline-block"
+                  }}>▼</span>
                 </div>
               </div>
               <div className={`hq-dropdown ${eventsOpen ? 'open' : ''}`}>
