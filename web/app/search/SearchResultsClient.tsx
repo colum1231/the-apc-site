@@ -1,7 +1,8 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { fetchCustomGPTResults } from "../lib/fetchCustomGPTResults";
+import LoadingWave from "../components/LoadingWave";
 
 type SearchResultsClientProps = {
   members: any[];
@@ -33,13 +34,74 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
   const [resourcesOpen, setResourcesOpen] = useState(false);
   const [partnershipsOpen, setPartnershipsOpen] = useState(false);
   const [eventsOpen, setEventsOpen] = useState(false);
+  // Animation state for fade/move of categories below the clicked one
+  const [fadingCategories, setFadingCategories] = useState<string[]>([]);
+  // Track which categories should be hidden (fully invisible)
+  const [categoriesHidden, setCategoriesHidden] = useState<string[]>([]);
+  // Track if a dropdown is animating (to delay fade-in)
+  const animatingRef = useRef(false);
 
-  // Exclusive dropdown behavior
+  // Helper: get categories below the clicked one, in bottom-up order
+  const categoryOrder = ['callRecordings', 'resources', 'partnerships', 'events'];
+  const getCategoriesBelow = (category: string) => {
+    const idx = categoryOrder.indexOf(category);
+    return categoryOrder.slice(idx + 1).reverse();
+  };
+
+  // Exclusive dropdown behavior with sequential fade-out and persistent hiding
   const toggleCategory = (category: string) => {
-    setCallRecordingsOpen(category === 'callRecordings' ? !callRecordingsOpen : false);
-    setResourcesOpen(category === 'resources' ? !resourcesOpen : false);
-    setPartnershipsOpen(category === 'partnerships' ? !partnershipsOpen : false);
-    setEventsOpen(category === 'events' ? !eventsOpen : false);
+    // If already open, just close all
+    if ((category === 'callRecordings' && callRecordingsOpen) ||
+        (category === 'resources' && resourcesOpen) ||
+        (category === 'partnerships' && partnershipsOpen) ||
+        (category === 'events' && eventsOpen)) {
+      // Start fade-in for hidden categories after dropdown closes
+      setCallRecordingsOpen(false);
+      setResourcesOpen(false);
+      setPartnershipsOpen(false);
+      setEventsOpen(false);
+      animatingRef.current = true;
+      // Wait for dropdown collapse animation (600ms), then fade in
+      setTimeout(() => {
+        setCategoriesHidden([]);
+        animatingRef.current = false;
+      }, 600);
+      setFadingCategories([]);
+      return;
+    }
+    // Start fade-out for categories below
+    const below = getCategoriesBelow(category);
+    if (below.length === 0) {
+      // No fade needed, just open
+      setCallRecordingsOpen(category === 'callRecordings');
+      setResourcesOpen(category === 'resources');
+      setPartnershipsOpen(category === 'partnerships');
+      setEventsOpen(category === 'events');
+      setFadingCategories([]);
+      setCategoriesHidden([]);
+      return;
+    }
+    // Sequentially fade out each below category
+    setFadingCategories([]);
+    animatingRef.current = true;
+    below.forEach((cat, i) => {
+      setTimeout(() => {
+        setFadingCategories(prev => [...prev, cat]);
+        // After fade-out, hide the category
+        setTimeout(() => {
+          setCategoriesHidden(prev => Array.from(new Set([...prev, cat])));
+        }, 500); // match fade duration
+      }, i * 600);
+    });
+    // After all fades, open the dropdown and clear fades
+    setTimeout(() => {
+      setCallRecordingsOpen(category === 'callRecordings');
+      setResourcesOpen(category === 'resources');
+      setPartnershipsOpen(category === 'partnerships');
+      setEventsOpen(category === 'events');
+      setFadingCategories([]);
+      animatingRef.current = false;
+    }, below.length * 600 + 50);
   };
 
   const isAnyDropdownOpen = callRecordingsOpen || resourcesOpen || partnershipsOpen || eventsOpen;
@@ -114,6 +176,9 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
   console.log("partnerships:", partnerships.length, partnerships);
   console.log("events:", events.length, events);
 
+  // Helper: should a category be hidden?
+  const isCategoryHidden = (cat: string) => categoriesHidden.includes(cat);
+
   // BRUTE FORCE RENDER FUNCTION
   return (
     <div 
@@ -170,7 +235,7 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
                 background: "transparent",
                 color: "#545454",
                 textAlign: "center",
-                fontSize: "18.625px",
+                fontSize: "16.125px",
                 outline: "none",
                 padding: "0 35px"
               }}
@@ -204,9 +269,7 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
           padding: "0 62.5px 48px 125px"
         }}>
           {loading ? (
-            <div style={{ color: "#fff", textAlign: "center", marginTop: "50px" }}>
-              Loading results...
-            </div>
+            <LoadingWave />
           ) : (
             <>
               {/* MEMBER CARDS */}
@@ -221,15 +284,15 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
                     {/* Line 1: display_title */}
                     <div style={{
                       color: "#8b8989",
-                      fontWeight: 600,
-                      fontSize: "19.5px",
-                      marginBottom: "5px"
+                    fontWeight: 600,
+                    fontSize: "18.5px",
+                    marginBottom: "5px"
                     }}>{member.display_title || member.name || member.title || "Unknown Member"}</div>
                     {/* Line 2: Relevant quote */}
                     {member.quote && (
                       <div style={{
                         color: "#8b8989",
-                        fontSize: "17.5px",
+                        fontSize: "16.5px",
                         fontStyle: "italic",
                         fontWeight: 400,
                         marginBottom: "20px"
@@ -251,7 +314,7 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
                   textAlign: 'center', 
                   fontStyle: 'italic',
                   marginTop: "50px",
-                  fontSize: "0.9375rem"
+                  fontSize: "0.875rem",
                 }}>
                   No results found for this query.
                 </div>
@@ -268,7 +331,7 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
         flexDirection: "column", 
         minHeight: "100vh", 
         overflow: "visible",
-        paddingTop: "80px"
+        paddingTop: "50px"
       }}>
         <div style={{ 
           flex: 1, 
@@ -280,7 +343,19 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
           <div className={`hq-content-wrapper ${isAnyDropdownOpen ? 'has-open-dropdown' : ''}`}>
             
             {/* CALL RECORDINGS CATEGORY */}
-            <div className={`hq-category ${callRecordingsOpen ? 'expanded' : ''}`} style={{ marginBottom: "30px", marginLeft: "-20px", position: "relative", left: "-20px", transform: "translateX(-20px)" }}>
+            <div
+              className={`hq-category ${callRecordingsOpen ? 'expanded' : ''}`}
+              style={{
+                marginBottom: "30px",
+                marginLeft: "-20px",
+                position: "relative",
+                left: "-20px",
+                transform: "translateX(-20px)",
+                opacity: isCategoryHidden('callRecordings') ? 0 : 1,
+                pointerEvents: isCategoryHidden('callRecordings') ? 'none' : undefined,
+                transition: "transform 0.5s ease, opacity 0.5s ease"
+              }}
+            >
               <div className="hq-category-header" style={{ display: "flex", alignItems: "center", width: "90%" }}>
                 <a href="https://www.notion.so/call-recordings-apc" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", flex: "1" }}>
                   <h1 style={{ color: "#8b8989", fontSize: "20px", fontWeight: "bold", margin: "0", padding: "0" }}>CALL RECORDINGS</h1>
@@ -290,7 +365,7 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
                     color: "#707070", 
                     fontSize: "12px", 
                     transform: callRecordingsOpen ? "rotate(0deg)" : "rotate(-90deg)",
-                    transition: "transform 0.3s ease",
+                    transition: "transform 0.6s ease",
                     display: "inline-block"
                   }}>▼</span>
                 </div>
@@ -308,14 +383,14 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
                       <div style={{
                         color: "#8b8989",
                         fontWeight: 600,
-                        fontSize: "16.5px",
+                        fontSize: "15.5px",
                         marginBottom: "2px"
                       }}>{asset.display_title || asset.title || asset.name || "Untitled Call"}</div>
                       {/* Line 2: Relevant quote (max 10 words) */}
                       {asset.quote && (
                         <div style={{
                           color: "#8b8989",
-                          fontSize: "15.5px",
+                          fontSize: "14.5px",
                           fontStyle: "italic",
                           fontWeight: 400
                         }}>
@@ -329,7 +404,7 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
                       {asset.resource_title || asset.url ? (
                         <div style={{
                           color: "#6faaff",
-                          fontSize: "1.0375rem",
+                          fontSize: "0.9375rem",
                           marginTop: "2px"
                         }}>
                           <a href={asset.url || "#"} target="_blank" rel="noopener noreferrer" style={{ color: "#6faaff", textDecoration: "underline" }}>
@@ -350,7 +425,18 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
             </div>
             
             {/* RESOURCES CATEGORY */}
-            <div className={`hq-category ${resourcesOpen ? 'expanded' : ''}`} style={{ marginLeft: "-20px", position: "relative", left: "-20px", transform: "translateX(-20px)" }}>
+            <div
+              className={`hq-category ${resourcesOpen ? 'expanded' : ''}`}
+              style={{
+                marginLeft: "-20px",
+                position: "relative",
+                left: "-20px",
+                transform: fadingCategories.includes('resources') ? "translateX(125px)" : "translateX(-20px)",
+                opacity: isCategoryHidden('resources') || fadingCategories.includes('resources') ? 0 : 1,
+                pointerEvents: isCategoryHidden('resources') ? 'none' : undefined,
+                transition: "transform 0.5s ease, opacity 0.5s ease"
+              }}
+            >
               <div className="hq-category-header" style={{ display: "flex", alignItems: "center", width: "90%" }}>
                 <a href="https://www.notion.so/resources-apc" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", flex: "1" }}>
                   <h1 style={{ color: "#8b8989", fontSize: "20px", fontWeight: "bold", margin: "0", padding: "0" }}>RESOURCES</h1>
@@ -360,7 +446,7 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
                     color: "#707070", 
                     fontSize: "12px", 
                     transform: resourcesOpen ? "rotate(0deg)" : "rotate(-90deg)",
-                    transition: "transform 0.3s ease",
+                    transition: "transform 0.6s ease",
                     display: "inline-block"
                   }}>▼</span>
                 </div>
@@ -423,7 +509,18 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
             </div>
             
             {/* PARTNERSHIPS CATEGORY */}
-            <div className={`hq-category ${partnershipsOpen ? 'expanded' : ''}`} style={{ marginLeft: "-20px", position: "relative", left: "-20px", transform: "translateX(-20px)" }}>
+            <div
+              className={`hq-category ${partnershipsOpen ? 'expanded' : ''}`}
+              style={{
+                marginLeft: "-20px",
+                position: "relative",
+                left: "-20px",
+                transform: fadingCategories.includes('partnerships') ? "translateX(125px)" : "translateX(-20px)",
+                opacity: isCategoryHidden('partnerships') || fadingCategories.includes('partnerships') ? 0 : 1,
+                pointerEvents: isCategoryHidden('partnerships') ? 'none' : undefined,
+                transition: "transform 0.5s ease, opacity 0.5s ease"
+              }}
+            >
               <div className="hq-category-header" style={{ display: "flex", alignItems: "center", width: "90%" }}>
                 <a href="https://www.notion.so/partnerships-apc" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", flex: "1" }}>
                   <h1 style={{ color: "#8b8989", fontSize: "21px", fontWeight: "bold", margin: "0", padding: "0" }}>PARTNERSHIPS</h1>
@@ -433,7 +530,7 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
                     color: "#707070", 
                     fontSize: "12px", 
                     transform: partnershipsOpen ? "rotate(0deg)" : "rotate(-90deg)",
-                    transition: "transform 0.3s ease",
+                    transition: "transform 0.6s ease",
                     display: "inline-block"
                   }}>▼</span>
                 </div>
@@ -462,7 +559,7 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
                           <div style={{ 
                             marginTop: "8px", 
                             color: "#949494", 
-                            fontSize: "0.9375rem",
+                            fontSize: "0.875rem",
                             borderTop: "1px solid rgba(255,255,255,0)",
                             paddingTop: "4px"
                           }}>
@@ -483,7 +580,18 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
             </div>
             
             {/* EVENTS CATEGORY */}
-            <div className={`hq-category ${eventsOpen ? 'expanded' : ''}`} style={{ marginLeft: "-20px", position: "relative", left: "-20px", transform: "translateX(-20px)" }}>
+            <div
+              className={`hq-category ${eventsOpen ? 'expanded' : ''}`}
+              style={{
+                marginLeft: "-20px",
+                position: "relative",
+                left: "-20px",
+                transform: fadingCategories.includes('events') ? "translateX(125px)" : "translateX(-20px)",
+                opacity: isCategoryHidden('events') || fadingCategories.includes('events') ? 0 : 1,
+                pointerEvents: isCategoryHidden('events') ? 'none' : undefined,
+                transition: "transform 0.5s ease, opacity 0.5s ease"
+              }}
+            >
               <div className="hq-category-header" style={{ display: "flex", alignItems: "center", width: "90%" }}>
                 <a href="https://www.notion.so/events-apc" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", flex: "1" }}>
                   <h1 style={{ color: "#8b8989", fontSize: "20px", fontWeight: "bold", margin: "0", padding: "0" }}>EVENTS</h1>
@@ -493,7 +601,7 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
                     color: "#707070", 
                     fontSize: "12px", 
                     transform: eventsOpen ? "rotate(0deg)" : "rotate(-90deg)",
-                    transition: "transform 0.3s ease",
+                    transition: "transform 0.6s ease",
                     display: "inline-block"
                   }}>▼</span>
                 </div>
