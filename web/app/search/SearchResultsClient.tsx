@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { fetchCustomGPTResults } from "../lib/fetchCustomGPTResults";
@@ -29,7 +30,13 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
   // Store quote cutoff for each member result (set once per result set)
   const [memberQuoteCutoffs, setMemberQuoteCutoffs] = useState<number[]>([]);
 
-  // Right column category states (HQ-style dropdowns)
+  // "Load more" visible counts for each category
+  const [callsVisible, setCallsVisible] = useState(5);
+  const [resourcesVisible, setResourcesVisible] = useState(5);
+  const [partnershipsVisible, setPartnershipsVisible] = useState(5);
+  const [eventsVisible, setEventsVisible] = useState(5);
+
+  // Dropdown open/close state for each category
   const [callRecordingsOpen, setCallRecordingsOpen] = useState(false);
   const [resourcesOpen, setResourcesOpen] = useState(false);
   const [partnershipsOpen, setPartnershipsOpen] = useState(false);
@@ -102,6 +109,14 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
       setFadingCategories([]);
       animatingRef.current = false;
     }, below.length * 600 + 50);
+  };
+
+  // Load more handler for each category
+  const loadMoreCategory = (category: string) => {
+    if (category === 'calls') setCallsVisible((v) => v + 5);
+    if (category === 'resources') setResourcesVisible((v) => v + 5);
+    if (category === 'partnerships') setPartnershipsVisible((v) => v + 5);
+    if (category === 'events') setEventsVisible((v) => v + 5);
   };
 
   const isAnyDropdownOpen = callRecordingsOpen || resourcesOpen || partnershipsOpen || eventsOpen;
@@ -372,7 +387,8 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
               </div>
               <div className={`hq-dropdown ${callRecordingsOpen ? 'open' : ''}`}>
                 {callResults && callResults.length > 0 ? (
-                  callResults.map((asset: any, index: number) => (
+                  <>
+                  {callResults.slice(0, callsVisible).map((asset: any, index: number) => (
                     <div key={index} className="hq-asset-item" style={{
                       marginBottom: "25px",
                       width: "100%",
@@ -413,8 +429,28 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
                         </div>
                       ) : null}
                     </div>
-                  ))
-                ) : (
+                  )) }
+                  {callsVisible < callResults.length ? (
+                    <div style={{ textAlign: "center", marginTop: "10px" }}>
+                      <button onClick={() => loadMoreCategory('calls')} style={{
+                        background: "transparent",
+                        border: "1px solid #8b8989",
+                        color: "#8b8989",
+                        padding: "8px 16px",
+                        cursor: "pointer",
+                        fontSize: "14px"
+                      }}>Load more</button>
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: "center", marginTop: "10px" }}>
+                      <a href="https://www.notion.so/APC-MASTERMIND-CALLS-26aa058529248097b6dcf4c39d9239fe?source=copy_link" target="_blank" rel="noopener noreferrer" style={{
+                        color: "#6faaff",
+                        textDecoration: "underline",
+                        fontSize: "14px"
+                      }}>View all Call Recordings</a>
+                    </div>
+                  )}
+                </> ) : (
                   <div className="hq-asset-item">
                     <div className="hq-asset-subtitle" style={{ color: "#707070", fontStyle: "italic" }}>
                       No call recording results found for this query.
@@ -453,7 +489,8 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
               </div>
               <div className={`hq-dropdown ${resourcesOpen ? 'open' : ''}`}>
                 {resourceResults && resourceResults.length > 0 ? (
-                  resourceResults.map((asset: any, index: number) => (
+                  <>
+                  {resourceResults.slice(0, resourcesVisible).map((asset: any, index: number) => (
                     <div key={index} className="hq-asset-item" style={{
                       marginBottom: "25px",
                       width: "100%",
@@ -497,7 +534,28 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
                         </div>
                       ) : null}
                     </div>
-                  ))
+                  ))}
+                  {resourcesVisible < resourceResults.length ? (
+                    <div style={{ textAlign: "center", marginTop: "10px" }}>
+                      <button onClick={() => loadMoreCategory('resources')} style={{
+                        background: "transparent",
+                        border: "1px solid #8b8989",
+                        color: "#8b8989",
+                        padding: "8px 16px",
+                        cursor: "pointer",
+                        fontSize: "14px"
+                      }}>Load more</button>
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: "center", marginTop: "10px" }}>
+                      <a href="https://www.notion.so/resources-apc" target="_blank" rel="noopener noreferrer" style={{
+                        color: "#6faaff",
+                        textDecoration: "underline",
+                        fontSize: "14px"
+                      }}>View all Resources</a>
+                    </div>
+                  )}
+                  </>
                 ) : (
                   <div className="hq-asset-item">
                     <div className="hq-asset-subtitle" style={{ color: "#707070", fontStyle: "italic" }}>
@@ -537,7 +595,8 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
               </div>
               <div className={`hq-dropdown ${partnershipsOpen ? 'open' : ''}`}>
                 {partnerResults && partnerResults.length > 0 ? (
-                  partnerResults.map((asset: any, index: number) => (
+                  <>
+                  {partnerResults.slice(0, partnershipsVisible).map((asset: any, index: number) => (
                     <div key={index} className="hq-asset-item">
                       <a 
                         href={asset.url || "#"} 
@@ -568,7 +627,28 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
                         )}
                       </div>
                     </div>
-                  ))
+                  )) }
+                  {partnershipsVisible < partnerResults.length ? (
+                    <div style={{ textAlign: "center", marginTop: "10px" }}>
+                      <button onClick={() => loadMoreCategory('partnerships')} style={{
+                        background: "transparent",
+                        border: "1px solid #8b8989",
+                        color: "#8b8989",
+                        padding: "8px 16px",
+                        cursor: "pointer",
+                        fontSize: "14px"
+                      }}>Load more</button>
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: "center", marginTop: "10px" }}>
+                      <a href="https://www.notion.so/PARTNERSHIPS-26aa0585292480f58f01c4f298922774?source=copy_link" target="_blank" rel="noopener noreferrer" style={{
+                        color: "#6faaff",
+                        textDecoration: "underline",
+                        fontSize: "14px"
+                      }}>View all Partnerships</a>
+                    </div>
+                  )}
+                  </>
                 ) : (
                   <div className="hq-asset-item">
                     <div className="hq-asset-subtitle" style={{ color: "#707070", fontStyle: "italic" }}>
@@ -608,7 +688,8 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
               </div>
               <div className={`hq-dropdown ${eventsOpen ? 'open' : ''}`}>
                 {eventResults && eventResults.length > 0 ? (
-                  eventResults.map((asset: any, index: number) => (
+                  <>
+                  {eventResults.slice(0, eventsVisible).map((asset: any, index: number) => (
                     <div key={index} className="hq-asset-item">
                       <a 
                         href={asset.url || "#"} 
@@ -625,7 +706,28 @@ export default function SearchResultsClient({ q }: SearchResultsClientProps) {
                         }
                       </div>
                     </div>
-                  ))
+                  )) }
+                  {eventsVisible < eventResults.length ? (
+                    <div style={{ textAlign: "center", marginTop: "10px" }}>
+                      <button onClick={() => loadMoreCategory('events')} style={{
+                        background: "transparent",
+                        border: "1px solid #8b8989",
+                        color: "#8b8989",
+                        padding: "8px 16px",
+                        cursor: "pointer",
+                        fontSize: "14px"
+                      }}>Load more</button>
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: "center", marginTop: "10px" }}>
+                      <a href="https://www.notion.so/EVENTS-26aa05852924801cb384c9a95d8ac0b7?source=copy_link" target="_blank" rel="noopener noreferrer" style={{
+                        color: "#6faaff",
+                        textDecoration: "underline",
+                        fontSize: "14px"
+                      }}>View all Events</a>
+                    </div>
+                  )}
+                  </>
                 ) : (
                   <div className="hq-asset-item">
                     <div className="hq-asset-subtitle" style={{ color: "#707070", fontStyle: "italic" }}>
