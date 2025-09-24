@@ -1,0 +1,206 @@
+
+> web@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.5.2
+   - Local:        http://localhost:3000
+   - Network:      http://10.0.1.252:3000
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · optimizePackageImports
+
+ ✓ Starting...
+ ✓ Ready in 1758ms
+ ○ Compiling /api/ask ...
+ ✓ Compiled /api/ask in 651ms (277 modules)
+ POST /api/ask 200 in 12901ms
+ ○ Compiling /search ...
+ ✓ Compiled /search in 1037ms (573 modules)
+ GET /search?q=help+me+search&id=ed7e376c-2063-42b1-8255-657419eeb3ab&vscodeBrowserReqId=1758406168196 200 in 1407ms
+ POST /api/ask 200 in 17000ms
+ ✓ Compiled in 982ms (573 modules)
+ ✓ Compiled in 569ms (573 modules)
+ ✓ Compiled in 350ms (566 modules)
+ ✓ Compiled in 777ms (566 modules)
+ ✓ Compiled in 334ms (566 modules)
+ GET /search?q=help+me+search&id=ed7e376c-2063-42b1-8255-657419eeb3ab&vscodeBrowserReqId=1758406282685 200 in 315ms
+ ✓ Compiled /api/ask in 252ms (348 modules)
+ POST /api/ask 200 in 10299ms
+ GET /search?q=setter+training&id=ed7e376c-2063-42b1-8255-657419eeb3ab&vscodeBrowserReqId=1758406294349 200 in 263ms
+ POST /api/ask 200 in 12576ms
+ GET /search?q=james+hyland&id=ed7e376c-2063-42b1-8255-657419eeb3ab&vscodeBrowserReqId=1758406311857 200 in 61ms
+ POST /api/ask 200 in 6150ms
+ ✓ Compiled in 449ms (573 modules)
+ ✓ Compiled in 1267ms (566 modules)
+ ✓ Compiled in 750ms (566 modules)
+🎯 Category Data Debug:
+transcripts: []
+resources: []
+partnerships: []
+events: []
+ GET /search?q=sales+training&id=8995d57d-80b9-41f5-bc53-cdd4eb5ecc03&vscodeBrowserReqId=1758406936777 200 in 345ms
+ ✓ Compiled /api/ask in 104ms (348 modules)
+ POST /api/ask 200 in 21175ms
+ ✓ Compiled in 893ms (573 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+🎯 Category Data Debug:
+transcripts: []
+resources: []
+partnerships: []
+events: []
+ GET /search?q=sales+training&id=8995d57d-80b9-41f5-bc53-cdd4eb5ecc03&vscodeBrowserReqId=1758406936777 200 in 375ms
+🎯 Category Data Debug:
+transcripts: []
+resources: []
+partnerships: []
+events: []
+ GET /search?q=marketing&id=8995d57d-80b9-41f5-bc53-cdd4eb5ecc03&vscodeBrowserReqId=1758406969558 200 in 57ms
+ POST /api/ask 200 in 6274ms
+ ✓ Compiled in 614ms (573 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+🎯 Category Data Debug:
+transcripts: []
+resources: []
+partnerships: []
+events: []
+ GET /search?q=marketing&id=8995d57d-80b9-41f5-bc53-cdd4eb5ecc03&vscodeBrowserReqId=1758406969558 200 in 318ms
+ POST /api/ask 200 in 14022ms
+ ○ Compiling /_not-found ...
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ✓ Compiled /_not-found in 751ms (578 modules)
+🎯 Category Data Debug:
+transcripts: []
+resources: []
+partnerships: []
+events: []
+ POST /api/ask 404 in 1147ms
+ GET /search?q=marketing&id=8995d57d-80b9-41f5-bc53-cdd4eb5ecc03&vscodeBrowserReqId=1758406969558 200 in 499ms
+ POST /api/ask 200 in 37205ms
+ POST /api/ask 200 in 41107ms
+ ✓ Compiled in 2.9s (578 modules)
+🔍 Raw resultsData: null
+🔍 resultsData keys: null
+🎯 Category Data Debug:
+transcripts: 0 []
+resources: 0 []
+partnerships: 0 []
+events: 0 []
+ GET /search?q=sales&id=8995d57d-80b9-41f5-bc53-cdd4eb5ecc03&vscodeBrowserReqId=1758407102429 200 in 280ms
+ ✓ Compiled in 986ms (573 modules)
+ ✓ Compiled /_not-found in 313ms (578 modules)
+ POST /api/ask 404 in 694ms
+ POST /api/ask 200 in 11869ms
+🔍 Raw resultsData: null
+🔍 resultsData keys: null
+🎯 Category Data Debug:
+transcripts: 0 []
+resources: 0 []
+partnerships: 0 []
+events: 0 []
+ GET /search?q=setter&id=8995d57d-80b9-41f5-bc53-cdd4eb5ecc03&vscodeBrowserReqId=1758407118425 200 in 89ms
+ ✓ Compiled in 1287ms (578 modules)
+ POST /api/ask 200 in 11861ms
+ ✓ Compiled in 645ms (578 modules)
+ ✓ Compiled in 757ms (578 modules)
+ ✓ Compiled in 531ms (578 modules)
+🔍 Raw resultsData: null
+🔍 resultsData keys: null
+🎯 Category Data Debug:
+transcripts: 0 []
+resources: 0 []
+partnerships: 0 []
+events: 0 []
+ GET /search?q=training&id=8995d57d-80b9-41f5-bc53-cdd4eb5ecc03&vscodeBrowserReqId=1758407174102 200 in 288ms
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 3.7s (918 modules)
+ POST /api/ask 404 in 4821ms
+ GET /search?q=training&id=8995d57d-80b9-41f5-bc53-cdd4eb5ecc03&vscodeBrowserReqId=1758407174102 200 in 1738ms
+ GET /search?q=training&id=8995d57d-80b9-41f5-bc53-cdd4eb5ecc03&vscodeBrowserReqId=1758407174102 200 in 112ms
+ POST /api/ask 200 in 10841ms
+ POST /api/ask 200 in 10628ms
+ POST /api/ask 200 in 10503ms
+ POST /api/ask 200 in 11506ms
+[API/ask] Message send failed { status: 504, body: null }
+ POST /api/ask 504 in 120842ms
+ POST /api/ask 200 in 12070ms
+ ✓ Compiled in 966ms (820 modules)
+ POST /api/ask 200 in 11212ms
+ POST /api/ask 200 in 11168ms
+ ✓ Compiled in 1052ms (820 modules)
+ ✓ Compiled in 783ms (820 modules)
+🎯 Category Data Debug:
+transcripts: 0 []
+resources: 0 []
+partnerships: 0 []
+events: 0 []
+ GET /search?q=training&id=8995d57d-80b9-41f5-bc53-cdd4eb5ecc03&vscodeBrowserReqId=1758407474187 200 in 312ms
+ ✓ Compiled /_not-found in 210ms (825 modules)
+ POST /api/ask 404 in 404ms
+🎯 Category Data Debug:
+transcripts: 0 []
+resources: 0 []
+partnerships: 0 []
+events: 0 []
+ GET /search?q=james+hyland&id=8995d57d-80b9-41f5-bc53-cdd4eb5ecc03&vscodeBrowserReqId=1758407489075 200 in 85ms
+ ✓ Compiled in 574ms (825 modules)
+ POST /api/ask 200 in 6698ms
+ ✓ Compiled in 3.9s (813 modules)
+ ✓ Compiled in 820ms (813 modules)
+ ✓ Compiled in 1173ms (813 modules)
+ ✓ Compiled in 897ms (813 modules)
+ ✓ Compiled in 861ms (813 modules)
+ ✓ Compiled in 943ms (813 modules)
+ ✓ Compiled in 1623ms (813 modules)
+ ✓ Compiled in 1493ms (813 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/workspaces/the-apc-site/web/.next/cache/webpack/server-development__compiler2__/0.pack_' -> '/workspaces/the-apc-site/web/.next/cache/webpack/server-development__compiler2__/0.pack'
+ ✓ Compiled in 804ms (813 modules)
+ ✓ Compiled in 1384ms (813 modules)
+ ⨯ ./app/search/SearchResultsClient.tsx
+Error:   [31mx[0m Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+     ,-[[36;1;4m/workspaces/the-apc-site/web/app/search/SearchResultsClient.tsx[0m:414:1]
+ [2m411[0m |             </div>
+ [2m412[0m |             
+ [2m413[0m |             {/* RESOURCES CATEGORY */}
+ [2m414[0m |                         }
+     : [35;1m                        ^[0m
+ [2m415[0m |             
+ [2m416[0m |             <div style={{ background: "yellow", color: "black", padding: "10px", margin: "20px 0" }}>
+ [2m417[0m |               DEBUG: RESOURCES CATEGORY SHOULD BE BELOW THIS
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/search/SearchResultsClient.tsx
+./app/search/SearchPageClient.tsx
+ ✓ Compiled in 1399ms (813 modules)
+ ✓ Compiled in 2.3s (813 modules)
+ ✓ Compiled in 1776ms (813 modules)
+ ✓ Compiled in 819ms (813 modules)
+ ✓ Compiled in 1233ms (813 modules)
+ ✓ Compiled in 1684ms (813 modules)
+ ✓ Compiled in 995ms (813 modules)
+ ✓ Compiled in 982ms (813 modules)
+ ✓ Compiled in 692ms (813 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/workspaces/the-apc-site/web/.next/cache/webpack/client-development__compiler1__/5.pack_' -> '/workspaces/the-apc-site/web/.next/cache/webpack/client-development__compiler1__/5.pack'
+ ✓ Compiled in 3.5s (813 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/workspaces/the-apc-site/web/.next/cache/webpack/server-development__compiler2__/2.pack_' -> '/workspaces/the-apc-site/web/.next/cache/webpack/server-development__compiler2__/2.pack'
+ ✓ Compiled in 1788ms (813 modules)
+ ✓ Compiled in 1705ms (813 modules)
+ ✓ Compiled in 963ms (813 modules)
+ ✓ Compiled in 1144ms (813 modules)
+ ✓ Compiled in 1055ms (813 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/workspaces/the-apc-site/web/.next/cache/webpack/client-development__compiler1__/4.pack_' -> '/workspaces/the-apc-site/web/.next/cache/webpack/client-development__compiler1__/4.pack'
+ ✓ Compiled in 890ms (813 modules)
+ ✓ Compiled in 1117ms (813 modules)
+ ✓ Compiled in 2.2s (813 modules)
+ ✓ Compiled in 1877ms (813 modules)
+ ✓ Compiled in 1163ms (813 modules)
+ ✓ Compiled in 1697ms (813 modules)
+ ✓ Compiled in 1024ms (813 modules)
+ ✓ Compiled in 1045ms (813 modules)
+ ✓ Compiled in 939ms (813 modules)
+ ✓ Compiled in 1266ms (813 modules)
+ ✓ Compiled in 1009ms (813 modules)
+ ✓ Compiled in 936ms (813 modules)

@@ -1,0 +1,155 @@
+[33meaaca10[m[33m ([m[1;36mHEAD[m[33m)[m Fix: Set quote truncation cutoff per result set, stable until new search
+[33m2881621[m Fix: force category header text and dropdown arrows visible with inline styles and debug backgrounds. Remove all CSS overrides hiding category text. Add colored backgrounds for visibility debugging.
+[33mb40db89[m Fix search functionality: CustomGPT API integration and data parsing
+[33mb45176b[m 🎯 Implement smooth HQ dropdown animations with proper spacing
+[33m0521493[m Refactored dropdown layout and spacing animations
+[33ma2d7f53[m Improve HQ page dropdown animation and fix positioning issues
+[33m657a8af[m Implement HQ dropdown gap animation and remove unnecessary transitions
+[33mf72bfaf[m Refine HQ dropdown spacing, gap animation, and layout
+[33m9b5f253[m Update landing page design: add centered logo overlay, fix colors, and update HQ page layout
+[33md87e52e[m feat: updated layout to 50/50 split and enabled results rendering
+[33m8fb188f[m feat: updated layout to 50/50 split and enabled results rendering
+[33ma1efb74[m feat: updated layout to 50/50 split and enabled results rendering
+[33m731fdb3[m Updated results page background image to res+cat_back.jpg
+[33m167a48b[m Fix: update CustomGPT API key and project ID
+[33mc706ec8[m Fix: update CustomGPT API key and project ID
+[33m4d8cf2c[m Fix: update CustomGPT API key and project ID
+[33m6442b1c[m Fix search to use /search?q= and show all CustomGPT results
+[33mb0dcc5d[m Update current site state
+[33m1a5efa3[m Update current site state
+[33m7438329[m Add: [your change]
+[33md8c2a24[m Add: [your change]
+[33md497d12[m Update current site state
+[33m891308b[m Add: [your change]
+[33mecb623c[m fixed error
+[33m04b4e2f[m feat(search): 50/50 split + search box placement
+[33me69a733[m Search page: enforce 50/50 layout + remove extra members box outline
+[33m7cdc7a2[m results: true 50/50 halves with 110px gutters; members box single corner outline only; lock page scroll
+[33m857c55c[m fix(search): wrap useSearchParams usage in Suspense boundary per Next 15
+[33m499504e[m fix(search): convert to Client Component; guard fetch/JSON; no SSR crash
+[33mf9364f6[m fix(search): harden server fetch; render safely on API errors
+[33m14e17fb[m style(results): enforce true 50/50 split and remove outer members box
+[33mcda4e71[m style(results): true 50/50 grid + reset right headers (transparent, 24px, spacing); lock viewport
+[33m17a788b[m fix(results): split interactive components into proper client modules; resolve SSR digest crash
+[33mc67a200[m fix(results): replace <details/summary> with controlled section+button to prevent SSR crash; keep preview→scroll flow
+[33me8019b2[m feat(results): right sections closed by default + preview→scroll flow; members bottom corners turn grey on first Load more
+[33m5736015[m style(results): enforce true 50/50 halves with 110px inner padding; hide stray corner frame on results (keep members corners only)
+[33m414a8e1[m style(results): members bottom corners turn grey after Load more; add 85% grey separators to non-member assets
+[33ma597ecb[m feat(results): right-side Load more→scroll mode (3 items, 20px gap, fades); keep sections closed by default
+[33m79a3bd0[m style(results): fixed members box height + 100px gap; bottom fade; scroll after ?m=all; load-more ~170px from bottom
+[33m7962fde[m style(results): exact 50/50 halves via 50vw columns; hide stray outer corner frames
+[33mecea310[m style(results): enforce 50/50 split, no page scroll, visible search at top-left; right headers closed by default
+[33m8910df8[m fix(results): remove styled-jsx from Server Component; keep 50/50 layout + closed categories
+[33mc69663b[m style(results): enforce 50/50 split & no page scroll; show search at top-left; right categories closed by default
+[33m958e598[m feat(results): static visible layout (split halves, search bar, sample content, no page scroll baseline)
+[33mc401b19[m debug(results): force visible debug bar (&debug=1) + sample rows if payload empty; keep non-scroll layout
+[33m8f40ed8[m feat(search): add fixed debug bar (&debug=1); show status+counts+raw payload; keep layout non-scroll and boxes-only
+[33m777d691[m feat(search): widen API parser; add &debug=1 panel; only render real items; preserve load-more & non-scroll layout
+[33m26e8539[m style(results): append non-scroll page + grey-corner boxes + scoped scroll containers; keep all existing CSS unchanged
+[33m649fc78[m fix(results): extract client scroller to its own module; prevent server hook crash; keep landing untouched
+[33m9b0658d[m feat(results): robust parsing + non-empty fallbacks; left members 4→scroll; right headers 24px/150px top, 125px gaps, open preview, +3 load-more→scroll with fades; separators; OTHER divider; landing untouched
+[33m745f22e[m fix(search): stop awaiting searchParams; use same-origin fetch; robust parsing
+[33mac65e13[m feat(results): locked landing; full results layout—50/50 halves, 110px gutters, home-style prompt @135, members box (740/60, corner runs, fades, 4→scroll), right column (24px headers, 150 top, 125 default gap, +3 load-more→scroll, asset separators, OTHER divider)
+[33m3a8ffdc[m feat(results:chunkB): right column spacing & scroll—24px headers, 150px top offset, 125px default gaps, open preview, +3 load-more → scroll (3 items, 20px gaps, fades); asset separators; OTHER divider
+[33m9556244[m fix(search): stop awaiting searchParams; use same-origin fetch to /api/ask
+[33m858ebf7[m feat(results:chunkA): 50/50 halves, 110px center/edge gutters, home-style prompt @135px, members box (740/60, corner runs), 4-default, load-more→scroll with fades; remove results overlay
+[33m2bccb1e[m fix(search): treat searchParams as plain object; same-origin fetch; keep landing unchanged
+[33m163ba2d[m chore: ignore stray web/the-apc-site dir
+[33mea8d6bb[m feat(results:chunk1): 50/50 halves + 110px center/edge gutter, home-style prompt @135px, members box, 4 items + load-more→scroll, fades; remove black overlay
+[33mf2f4631[m chore: trigger vercel deploy
+[33md8cee44[m feat(search): two-column results layout (members left, collapsibles right) + styles
+[33mb703945[m[33m ([m[1;32mnew-feature-branch[m[33m)[m feat(search): layout + styles (members left, categories right)
+[33m89a5cd4[m feat(search): improved structured rendering with members priority
+[33m15f5b56[m feat(search): parse code block and render sections
+[33md1a0151[m fix(search): clean server-only page and layout
+[33m29f4ffc[m fix(search): await searchParams & use env-derived absolute URL
+[33mda38b13[m fix(search): use absolute URL for server fetch
+[33m23ffbbc[m style: adjust font and input positioning
+[33mb5b6208[m style: adjust font and input positioning
+[33m7bf506f[m chore(search): diagnostic page calls /api/ask
+[33m1c1ed63[m style: adjust font and input positioning
+[33m5edbdfd[m style: adjust font and input positioning
+[33m8c8cd5e[m feat(search): two-column layout with priority section + dropdown headers
+[33m7960e33[m fix(api): force node runtime + canonical Authorization + better errors
+[33m87ab775[m chore(assets): update landing background image
+[33m6062393[m fix(search): Next 15 async searchParams + env-based origin
+[33mc36ab8d[m feat(search): server fetch to /api/ask with safe JSON
+[33mf3d6c46[m debug(search): render-only page to isolate runtime error
+[33m61ed8c8[m fix(search): working ask API with debug output
+[33m5037e88[m chore(api): add /api/debug to verify env + flow
+[33mefcbbdd[m fix(api): omit response_source to avoid 403
+[33m7a58c09[m fix(api): robust ask route with env checks + detailed errors
+[33mddd1126[m chore(assets): update landing background image
+[33m298f9e0[m style(logo): keep position stable when scaling
+[33m8ed2603[m style(logo): keep position stable when scaling
+[33m5ccda3a[m style(logo): keep position stable when scaling
+[33mcfb33dc[m style(logo): keep position stable when scaling
+[33m6e9e1cc[m style(logo): double logo size
+[33mdc40d17[m chore(css): update global styles
+[33m6f6a56a[m chore(css): update global styles
+[33m2a9987a[m chore(css): update global styles
+[33mf162db0[m fix(bg): render landing-wrap so CSS background shows
+[33m747ad0b[m fix(bg): force landing background on html/body
+[33mb24aa28[m landing: use CSS classes + image, remove heading
+[33m851441d[m fix(landing): convert to client component; remove server-only exports
+[33m65f7da1[m feat(landing): use logo image and faint bg photo
+[33m2df5281[m fix: minimal safe landing at /
+[33m7ddea0f[m feat: restore landing route at /
+[33m2651194[m fix(landing): restore CSS for landing layout
+[33m64dcc7b[m fix(landing): restore full landing layout with form
+[33m44e8721[m fix: move search API handler to api/search
+[33mcb1adc1[m feat(search): implement server-rendered results with priority section
+[33m0fee16b[m fix(css): resolve syntax + undefined vars and update landing page
+[33m5648f0f[m style(global): update global CSS
+[33mf0a204d[m style(landing): adjust logo position, shrink and move text box
+[33ma6a76e9[m chore: replace logo and background with higher quality versions
+[33m24fca2e[m chore: replace logo and background with higher quality versions
+[33mba49743[m feat(search): add CustomGPT ask API and search results layout
+[33m00ced06[m chore: replace logo and background with higher quality versions
+[33mb2e2706[m style(input): placeholder disappears on focus
+[33mce0478f[m style(landing): adjust logo position, shrink and move text box
+[33m32d36c3[m style(landing): adjust logo position, shrink and move text box
+[33m8ea2188[m style(landing): adjust logo position, shrink and move text box
+[33mdcd2249[m style(landing): adjust logo position, shrink and move text box
+[33mfe9c6cf[m fix(landing): restore pixel-perfect logo + input placement
+[33mb8085dc[m chore: replace logo and background with higher quality versions
+[33mdd8ea45[m style(landing): helvetica font, smaller input, hq opacity
+[33maac0fc2[m chore: replace logo and background with higher quality versions
+[33mbfc55f0[m fix(landing): viewport-mapped layout; no scaling
+[33m1fed9e8[m chore: replace logo and background with higher quality versions
+[33m967aba3[m style(landing): 1920x1080 stage + variable controls
+[33m63fb478[m chore: replace logo and background with higher quality versions
+[33mea6ea97[m style(landing): add background image + input styles
+[33m312315b[m feat(landing): switch from inline SVG back to PNG logo
+[33m47aae0d[m fix: upload real PNG logo
+[33m932c085[m fix(landing): inline SVG logo to verify render
+[33m0c8cbb1[m test: inline data-URI logo to verify rendering
+[33m8e100c9[m Add files via upload
+[33m5bc6a7f[m fix: replace invalid logo with valid PNG placeholder
+[33m78ba3b3[m fix: correct logo filename and extension
+[33m22b8459[m chore: use PNG logo
+[33maf9d18b[m Add files via upload
+[33mdbc3dfb[m landing: exact 1920x1080 coordinates + scaled stage
+[33me2d3236[m feat(landing): precise layout, styles, background, logo
+[33m58fa3bb[m style(landing): 1080-based scaled layout, exact positions
+[33m1433ede[m chore: update images
+[33m5e99ffb[m style(landing): pixel-precise layout + colors
+[33m19ff5e1[m Add files via upload
+[33me44792a[m style(landing): logo + rounded search + faded bg
+[33m1ab869b[m Add logo and landing background images
+[33m460e57e[m fix(import): use alias for Section/Card and ensure correct path
+[33mc5fb713[m feat(search): sectioned UI with components
+[33m4a34449[m add /hq and /search pages
+[33m2f0871f[m fix: add /search route and remove /results
+[33me700df3[m chore: add health check
+[33m5f28442[m fix: make / landing static and move server logic to /search
+[33m5ff9563[m fix: remove /results, add server-only /search, ensure api route
+[33m9b5df4a[m chore: fully remove results page
+[33ma70eff4[m feat(results): server-only page using searchParams; remove hooks
+[33m239b1e4[m fix(results): client component under Suspense + force-dynamic
+[33m16939d5[m fix(results): wrap useSearchParams in Suspense + force-dynamic
+[33m1f4ba93[m reset to known-good Next app, unblock build
+[33m6efa827[m Rotate API key, use env vars, fix /api/ask route, relax ESLint
+[33m0486adc[m fix: secure API route with env vars
+[33ma5f7876[m Add Next.js app in /web
+[33m63cdab9[m Create README.md.

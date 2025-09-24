@@ -1,0 +1,7 @@
+/* Fade-out animation for category titles */
+.fade-out-move {
+  opacity: 0 !important;
+  transform: translateX(100px);
+  background: #000 !important;
+  transition: opacity 0.5s, transform 0.5s, background 0.5s;
+}
